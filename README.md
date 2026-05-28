@@ -115,6 +115,40 @@ Three execution modes, chosen automatically from settings + DAG shape (with grac
 - **Dynamic workflow** (`workflow_mode: auto`) — a generated `Workflow` pipeline that fans out
   independent tasks up to a parallelism cap.
 
+## Models, effort & agents
+
+Every skill and every agent declares an **execution profile** in its frontmatter — which model,
+how much reasoning effort, and which agents it spawns:
+
+```yaml
+# a skill's frontmatter
+model: opus        # haiku | sonnet | opus | inherit
+effort: high       # low | medium | high | xhigh | max
+agents: [sdd-critic]   # the agents this skill spawns
+```
+
+Model is chosen by the **kind of work**, not by taste:
+
+| Kind of work | Model | Effort | Who |
+|---|---|---|---|
+| Judgment (spec, design, review, critique, ambiguity) | `opus` | `high` | specify, clarify, design, review · `sdd-reviewer` / `sdd-critic` / `sdd-devils-advocate` |
+| Execution (write tests, write code) | `sonnet` | `medium` → `high` on escalation | `sdd-test-author`, `sdd-implementer` |
+| Search / scan / derivation | `haiku` / `inherit` | `low` / `medium` | `sdd-explorer`; data-model, api, sequences, tasks |
+
+The six agents (`agents/`): **sdd-explorer** (brownfield scan, read-only), **sdd-test-author**
+(writes failing tests), **sdd-implementer** (makes them pass), **sdd-reviewer** (independent
+review, read-only), **sdd-critic** (coherence critique, read-only), **sdd-devils-advocate**
+(ambiguity hunt, read-only). The four read-only agents run in **clean isolated context** — fresh
+eyes are the point — and emit only cited findings. Full policy + the agent contract:
+[`skills/_shared/agent-roster.md`](./skills/_shared/agent-roster.md).
+
+Override precedence is `env var > settings > frontmatter > session`. Because the `effort:`
+frontmatter has been reported as a no-op on some Claude Code builds, the implement engine also
+exports `CLAUDE_CODE_EFFORT_LEVEL` / `CLAUDE_CODE_SUBAGENT_MODEL` for its dispatches — so effort
+takes effect even where the frontmatter doesn't. Effort also scales with the feature `.size`
+(L/XL bumps execution effort to `high`). Set `CLAUDE_CODE_EFFORT_LEVEL` yourself if a run feels
+under-reasoned.
+
 ### Configuration — `.claude/sdd.local.md`
 
 `implement` lazy-creates this per-project settings file (YAML frontmatter) on first run with
@@ -137,6 +171,12 @@ cmd_test_unit: ""          # empty = autodetect (escape hatch)
 cmd_test_integration: ""
 cmd_lint: ""
 cmd_vet: ""
+model_test_author: sonnet  # per-role model + effort (see Models, effort & agents)
+model_implementer: sonnet
+model_reviewer: opus
+effort_test_author: medium # raised to high on escalation / for L-XL features
+effort_implementer: medium
+effort_reviewer: high
 ```
 
 Command detection is a stack-agnostic cascade: settings override → Makefile targets →
@@ -166,7 +206,7 @@ Artifacts land in `docs/features/<slug>/`.
 
 ```
 .claude-plugin/   plugin.json + marketplace.json (self-marketplace)
-agents/           sdd-test-author, sdd-implementer, sdd-reviewer
+agents/           sdd-explorer, sdd-test-author, sdd-implementer, sdd-reviewer, sdd-critic, sdd-devils-advocate
 scripts/          validate_plugin.py (CI: manifest name/version/description + frontmatter)
 skills/_shared/   canonical socratic-loop / critic / size-matrix / ask-style (referenced, not duplicated)
 skills/<name>/    SKILL.md spine + references/ (heavy detail) + templates/ (output scaffolds)

@@ -27,9 +27,12 @@ cmd_test_unit: ""          # empty = autodetect (escape hatch)
 cmd_test_integration: ""
 cmd_lint: ""
 cmd_vet: ""
-model_test_author: inherit
-model_implementer: inherit
-model_reviewer: inherit
+model_test_author: sonnet     # per-role model (see _shared/agent-roster.md); inherit = session model
+model_implementer: sonnet
+model_reviewer: opus
+effort_test_author: medium    # per-role effort; raised to high on escalation
+effort_implementer: medium
+effort_reviewer: high
 ```
 
 ## What each key does
@@ -45,7 +48,9 @@ model_reviewer: inherit
 - **`auto_commit`** — `per_task` (default), `per_phase`, or `off` (leave commits to the user).
 - **`branch_strategy`** — `feature`: ensure work is on a feature branch (create one if on the default branch); `current`: commit on the current branch.
 - **`cmd_*`** — explicit command overrides; non-empty values short-circuit detection (the escape hatch for unusual repos).
-- **`model_*`** — per-role model override; `inherit` uses the session model.
+- **`model_*` / `effort_*`** — per-role model + effort for the three agents, applied when the engine spawns them (it overrides the agent's frontmatter default). Roster defaults + rationale → [`../../_shared/agent-roster.md`](../../_shared/agent-roster.md). Precedence: env var > this setting > agent frontmatter > session.
+  - **Env path (reliable lever):** because the `effort:` frontmatter has been reported as a no-op on some builds (GitHub claude-code#43083), the engine ALSO exports `CLAUDE_CODE_EFFORT_LEVEL` (and `CLAUDE_CODE_SUBAGENT_MODEL`) for the dispatch when these keys are set — so effort takes effect even where the frontmatter doesn't.
+  - **`.size` scaling:** the engine raises the default effort for **L/XL** features (execution agents → `high`) before dispatch, and keeps the cheap defaults for **XS/S** — a cross-module change is where reasoning depth pays off. It prints the resolved per-role model+effort in the banner.
 
 ## Reading semantics
 

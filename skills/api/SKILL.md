@@ -1,5 +1,8 @@
 ---
 name: api
+model: inherit
+effort: medium
+agents: []
 description: >
   Use to derive the API contract for a feature — an OpenAPI 3.1 document at
   docs/features/{slug}/contracts/openapi.yaml plus a drift/sync report (and an events doc when
@@ -38,7 +41,10 @@ Backend Lead (drives the interface). The PM confirms each endpoint maps to a rea
 4. **Derive error responses from the sequences.** Each endpoint covered by a §6 flow: turn every `alt … else … end` branch into a `responses` entry. The error body is the unified envelope **`{code, message, details?}`**; `code` follows the **neutral** convention `module.error_name` (snake_case, e.g. `lesson.not_owned`, `lesson.invalid_state`) — a naming rule, not a language artifact. Map status by class (4xx client / 5xx server). This closes the spec's usual blind spot — §5 lists the happy path + a couple of errors; the sequences enumerate the authorization and concurrent-state branches the spec omits.
 5. **Async + idempotency.** A mutating endpoint whose §6 flow shows a retry note or an async actor is marked `Idempotency-Key`-required (state the TTL). For each async message, fill an `events.md` entry: event name `module.action.vN`, payload schema, producer, consumers, retry / dead-letter behaviour.
 6. **Examples + placeholder data.** Every operation carries a request example + a success example + an error example, using placeholder values only (`<...>@example.test`, `+380 00 000 00 00`, `Test User`) — never real PII.
-7. **Inline DRIFT CHECK + write the report.** Compare the generated contract against the read artifacts and write `docs/features/<slug>/contracts/api-sync-report.md` — see [`./references/drift-check.md`](./references/drift-check.md). It has a field-origins table (one row per `operation.field`: `path | origin | confidence`) and a 4-point checklist (endpoint↔model, error-code↔repo, validation↔constraint, OpenAPI↔sequence). A **core** finding failing (or ≥3 flags total) pauses the run — resolve each via the shared 4-state actions ([`../_shared/ask-style.md`](../_shared/ask-style.md)): Accept-as-is / Fix-the-contract / Save-as-OQ / Fix-the-source-first. Never edit the sources — surface the mismatch and let the human pick the right artifact.
+7. **Inline DRIFT CHECK (bidirectional) + write the report.** Compare the generated contract against the read artifacts and write `docs/features/<slug>/contracts/api-sync-report.md` — see [`./references/drift-check.md`](./references/drift-check.md). It has a field-origins table (one row per `operation.field`: `path | origin | confidence`) and a checklist. The check runs **both directions**:
+   - **forward** (contract derived correctly): endpoint↔model, error-code↔repo, validation↔constraint, OpenAPI↔sequence.
+   - **back-feed (coverage cross-check)**: every `spec.md` §5 AC maps to ≥1 operation/response; every operation maps to a §4 user story + ≥1 AC; every `sad.md` §6 `alt`-branch has a response, and any error/authorization response the contract needs but no §6 flow shows is a **sequence gap**. A gap here is not an api bug — it's a hole upstream: surface it and offer **Fix-the-source-first**, which re-opens `specify` (add the missing AC) or `sequences` (draw the missing branch) before the contract is finalized.
+   A **core** finding failing (or ≥3 flags total) pauses the run — resolve each via the shared 4-state actions ([`../_shared/ask-style.md`](../_shared/ask-style.md)): Accept-as-is / Fix-the-contract / Save-as-OQ / Fix-the-source-first. Never silently edit the sources — surface the mismatch and let the human pick the right artifact (the contract, the spec's AC, or the sequence).
 8. **Lint + write + commit.** Suggest `spectral lint contracts/openapi.yaml` (add it to the project's check target if not yet wired). On a clean check, the files are written; propose commit `api: <slug> contract`. Next: `tasks <slug>`.
 
 ### Reconcile mode

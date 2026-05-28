@@ -1,5 +1,8 @@
 ---
 name: decide-adr
+model: opus
+effort: high
+agents: []
 description: >
   Use to record a post-hoc or asynchronous architecture decision as a MADR ADR when it
   was NOT captured during the synchronous design pass — a choice made in code, in a chat,

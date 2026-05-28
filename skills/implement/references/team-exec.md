@@ -12,7 +12,7 @@ When the decision tree selects the team, the engine becomes a **lead** coordinat
 
 1. Create the team (`TeamCreate`). Seed a shared **TaskList** from `tasks.json` — **the full task text goes in each task body** (title, `acs` text pulled from spec §5, `dod`, `files_hint`). Teammates do NOT read the plan or the conversation; the task body is their whole brief.
 2. Give each agent its own git **worktree** under `.worktrees/<agent>` (`isolation: worktree` is required for the team — the guard enforces it). No two agents share a tree.
-3. Set per-role models from `model_test_author` / `model_implementer` / `model_reviewer` (default inherit).
+3. Set per-role **model + effort** from `model_*` / `effort_*` (roster defaults: test-author/implementer `sonnet`+`medium`, reviewer `opus`+`high` — see [`../../_shared/agent-roster.md`](../../_shared/agent-roster.md)). Apply the `.size` scaling (L/XL → execution effort `high`). Because the `effort:` frontmatter may be a no-op on some builds, also export `CLAUDE_CODE_EFFORT_LEVEL` / `CLAUDE_CODE_SUBAGENT_MODEL` for the dispatch. Print the resolved per-role model+effort in the banner.
 
 ## Flow per task
 

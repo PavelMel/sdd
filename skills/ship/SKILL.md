@@ -1,5 +1,8 @@
 ---
 name: ship
+model: inherit
+effort: medium
+agents: []
 description: >
   Use to close the loop after review — verify the feature actually works, write the changelog /
   knowledge-base note, and open the pull request. Triggers on "ship {slug}", "open a PR for {slug}",

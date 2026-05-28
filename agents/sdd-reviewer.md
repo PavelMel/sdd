@@ -5,7 +5,8 @@ description: >
   criteria it claims (stage 1) and meets quality/convention/edge-case bars (stage 2). Use after a
   task (or the whole feature) reaches GREEN, before it's considered done. It reads the diff and the
   upstream artifacts and reports findings; it has no write tools and never edits code.
-model: inherit
+model: opus
+effort: high
 color: cyan
 tools: Read, Grep, Glob, Bash
 ---

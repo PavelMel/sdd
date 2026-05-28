@@ -1,5 +1,8 @@
 ---
 name: sequences
+model: inherit
+effort: medium
+agents: []
 description: >
   Use to add Mermaid sequenceDiagram blocks to the SAD's runtime view (sad.md §6) — one per
   critical flow, showing how a request moves between participants with happy + error paths.

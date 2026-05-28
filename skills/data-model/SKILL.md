@@ -1,5 +1,8 @@
 ---
 name: data-model
+model: inherit
+effort: medium
+agents: [sdd-explorer]
 description: >
   Use to design the data model AND generate the actual forward + rollback migrations in one
   pass — shippable SQL, not a plan. Triggers on "data model for {slug}", "schema for {slug}",

@@ -1,5 +1,8 @@
 ---
 name: glossary
+model: haiku
+effort: low
+agents: []
 description: >
   Use to capture or update domain terms in CONTEXT.md before their meaning drifts —
   whenever a fuzzy word shows up in an interview, spec, or review and you want one

@@ -1,5 +1,8 @@
 ---
 name: tasks
+model: inherit
+effort: medium
+agents: []
 description: >
   Use to break a designed feature into atomic, ≤1-day tasks with a dependency graph, a
   per-task Definition of Done, and a machine-readable tasks.json that the implement engine

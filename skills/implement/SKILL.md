@@ -1,5 +1,8 @@
 ---
 name: implement
+model: inherit
+effort: medium
+agents: [sdd-test-author, sdd-implementer, sdd-reviewer]
 description: >
   Use to implement a feature from its tasks.json with test-driven development — writes a failing
   test first, makes it pass, refactors, gates, and commits per task. Triggers on "implement {slug}",

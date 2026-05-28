@@ -95,7 +95,35 @@ def main() -> int:
         check(bool(entry.get("description")), "marketplace entry has a description", "marketplace 'sdd' entry has no description")
         check(bool(entry.get("source")), "marketplace entry has a source", "marketplace 'sdd' entry has no source")
 
-    # --- skills: every trigger skill has name + description; _shared is reference-only ---
+    VALID_MODELS = {"haiku", "sonnet", "opus", "inherit"}
+    VALID_EFFORTS = {"low", "medium", "high", "xhigh", "max"}
+    agent_names = {p.stem for p in (ROOT / "agents").glob("*.md")}
+
+    def parse_list(v: str) -> list[str]:
+        v = v.strip()
+        if v.startswith("[") and v.endswith("]"):
+            v = v[1:-1]
+        return [x.strip() for x in v.split(",") if x.strip()]
+
+    def check_profile(label: str, fm: dict, require: bool):
+        """Validate model/effort/agents attributes if present (required on skills)."""
+        m, e = fm.get("model"), fm.get("effort")
+        if require:
+            check(m is not None, f"{label} declares model", f"{label} is missing the model attribute")
+            check(e is not None, f"{label} declares effort", f"{label} is missing the effort attribute")
+        if m is not None:
+            check(m in VALID_MODELS or "-" in m or "." in m,
+                  f"{label} model {m!r} is valid", f"{label} model {m!r} not in {sorted(VALID_MODELS)} or a full id")
+        if e is not None:
+            check(e in VALID_EFFORTS or e.isdigit(),
+                  f"{label} effort {e!r} is valid", f"{label} effort {e!r} not in {sorted(VALID_EFFORTS)} or a number")
+        ag = fm.get("agents")
+        if ag is not None:
+            for a in parse_list(ag):
+                check(a in agent_names, f"{label} → agent '{a}' exists",
+                      f"{label} references agent '{a}' with no agents/{a}.md")
+
+    # --- skills: every trigger skill has name + description + model/effort/agents profile ---
     print("== skills ==")
     skills_dir = ROOT / "skills"
     for skill_md in sorted(skills_dir.glob("*/SKILL.md")):
@@ -110,6 +138,7 @@ def main() -> int:
         check(len(fm.get("description", "")) >= 30 or "description" in _block_keys(skill_md),
               f"skill '{base}' has a description",
               f"skill '{base}' has no/short description")
+        check_profile(f"skill '{base}'", fm, require=True)
     check((skills_dir / "_shared").is_dir() and not (skills_dir / "_shared" / "SKILL.md").exists(),
           "_shared is reference-only (no SKILL.md)",
           "_shared is missing or contains a SKILL.md")
@@ -120,6 +149,7 @@ def main() -> int:
         fm = read_frontmatter(agent_md)
         check(bool(fm.get("name")), f"agent '{agent_md.stem}' has a name", f"agent '{agent_md.name}' has no name frontmatter")
         check("description" in _block_keys(agent_md), f"agent '{agent_md.stem}' has a description", f"agent '{agent_md.name}' has no description")
+        check_profile(f"agent '{agent_md.stem}'", fm, require=True)
 
     print()
     if errors:

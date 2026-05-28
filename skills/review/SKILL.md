@@ -1,5 +1,8 @@
 ---
 name: review
+model: opus
+effort: high
+agents: [sdd-reviewer]
 description: >
   Use to run an independent, clean-context code review of an implemented feature against its
   spec and acceptance criteria before shipping. Triggers on "review {slug}", "code review the

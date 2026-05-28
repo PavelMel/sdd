@@ -6,7 +6,8 @@ description: >
   failing line, it writes the minimal production code to pass, refactors while staying green,
   and runs the per-task gate (unit + integration-if-available + lint + vet). It never weakens
   or edits the test to force a pass.
-model: inherit
+model: sonnet
+effort: medium
 color: green
 tools: Read, Grep, Glob, Write, Edit, Bash
 ---

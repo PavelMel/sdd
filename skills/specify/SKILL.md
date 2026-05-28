@@ -1,5 +1,8 @@
 ---
 name: specify
+model: opus
+effort: high
+agents: [sdd-critic]
 description: >
   Use to turn a raw feature idea into a reviewed spec.md — a lightweight Socratic interview
   front (capture the idea, deep-dive the problem) merged with a full product spec (context,
@@ -34,11 +37,11 @@ PM + Tech Lead (co-authors). PM drives goals / non-goals / KPIs; Tech Lead drive
 1. **Read context.** If `CONTEXT.md` exists, load its `## Glossary` as session state (canonical roles + terms). If `.size` exists, read it to size the spec's depth.
 2. **Capture the idea (interview front).** One `AskUserQuestion` for the raw idea in 1–3 sentences (persist verbatim as the baseline). Then a short Socratic deep-dive — 3–5 questions across problem clarity / success criteria / constraints / strategic fit, delivered in batches of 2–3. Phrase every question per [`../_shared/ask-style.md`](../_shared/ask-style.md).
 3. **Depth gate.** For **M/L/XL** features, offer the heavy ideation pass (competitive research, 3 strategic approaches, multi-perspective review, devil's-advocate, Claude-proposed RICE/feasibility) → [`./references/ideation.md`](./references/ideation.md). For **XS/S**, skip it — the deep-dive answers are enough.
-4. **Collect glossary terms.** Add each new domain word to a `pending_glossary_terms` list; do **not** write `CONTEXT.md` here — hand them to `glossary` after the spec is written.
+4. **Reconcile the glossary in-flow (hard).** On every new or unknown domain term that surfaces in the interview or the draft, invoke `glossary <slug>` for it **immediately** — compare it against `CONTEXT.md` and add/update the definition before continuing. By the time the spec is written, every §4 role and §5 domain term is already glossary-canonical; the glossary is never a deferred batch. (Plan-mode nuance: still decide add/update per term in-flow; if writes are blocked until the spec write-point, persist the reconciled terms together with the spec, but never skip the per-term compare.)
 5. **Ask which extra channels to read** (multi-select `AskUserQuestion`): reference module code / project docs / MCP-Atlassian (Confluence/Jira) / knowledge-base / none. For each picked channel ask the **specific** path/query — no silent broad scans.
 6. **Read the template + draft §1–§8.** Read [`./templates/spec.md`](./templates/spec.md) (its `<!-- instruction -->` comments are the per-section contract). Draft per [`./references/draft-generation.md`](./references/draft-generation.md): per-section sources, the **5 AC coverage types** (happy / error / authorization / domain invariant / cross-context), and the **stack-agnostic forbidden-token** rule for acceptance criteria.
 7. **Socratic validation.** Walk §4 US → §5 AC → §6 NFR → §7 KPI with the shared 4-state machine. Specify delta → [`./references/socratic.md`](./references/socratic.md): AC has a 5th option «Add another AC»; the §5 coverage gate must keep ≥1 AC of each of the 5 types after drops/OQ-migrations (regenerate a replacement if a type breaks). Maintain the edits-log.
-8. **Critic + write + commit.** Dispatch the clean-context critic ([`./references/critic.md`](./references/critic.md) delta over [`../_shared/critic.md`](../_shared/critic.md)) on the draft + edits-log; resolve findings via `AskUserQuestion` (Accept revert / Accept amendment / Override-with-rationale → §1 ¶4 bullet). Run the forbidden-token regex scan as the F6 backstop. On pass, write `docs/features/<slug>/spec.md`, hand `pending_glossary_terms` to `glossary`, and propose commit `spec: <slug>`. Next: `clarify <slug>`.
+8. **Critic + write + commit.** Dispatch the named [`sdd-critic`](../../agents/sdd-critic.md) agent (carries `model: opus` + `effort: high`, clean-isolated context per [`../_shared/agent-roster.md`](../_shared/agent-roster.md)) with the specify delta in [`./references/critic.md`](./references/critic.md) (over [`../_shared/critic.md`](../_shared/critic.md)) — inline the draft + edits-log, it Reads `CONTEXT.md` + the idea source itself. Resolve findings via `AskUserQuestion` (Accept revert / Accept amendment / Override-with-rationale → §1 ¶4 bullet). Run the forbidden-token regex scan as the F6 backstop. On pass, write `docs/features/<slug>/spec.md` (glossary already reconciled in-flow per step 4) and propose commit `spec: <slug>`. Next: `clarify <slug>`. (If `sdd-critic` is unavailable, fall back to a `general-purpose` Agent with the same delta.)
 
 ## Definition of Done
 

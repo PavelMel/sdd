@@ -1,5 +1,8 @@
 ---
 name: classify-size
+model: haiku
+effort: low
+agents: []
 description: >
   Use to classify a feature into XS/S/M/L/XL and write docs/features/{slug}/.size so
   later skills know how much of each artifact to produce. Triggers on "classify size",
