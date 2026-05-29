@@ -1,8 +1,8 @@
 # SDD — Spec-Driven Development for Claude Code
 
 A self-contained Claude Code plugin that carries a feature from a one-line idea to
-**reviewed, verified, shipped** code through **15 atomic, stack-agnostic skills** and a
-**TDD implementation engine**.
+**reviewed, verified, shipped** code through **16 atomic, stack-agnostic skills** and a
+**TDD implementation engine** — with a living roadmap above the per-feature flow.
 
 Every skill is Socratic (it walks decisions with you, it doesn't dump a wall of output),
 gated (a stage hard-refuses when its prerequisite artifact is missing), and stack-agnostic
@@ -131,6 +131,23 @@ Its greenfield mode gauges how you want to engage, then picks the stack / struct
 scaffold `tasks.json`. `implement` then materializes the skeleton — anchored on a smoke test
 («builds + boots + the test and migration tooling run») rather than per-folder TDD. After that the
 repo is real and the per-feature flow builds into it normally.
+
+## The roadmap (the portfolio layer)
+
+The backbone builds **one feature at a time**. `roadmap` is the layer **above** it — one living
+`docs/roadmap.md` that shows the work *across* features, kept at **outcome altitude** (the "why",
+not a feature-and-date list, which is the biggest source of planning waste):
+
+- **Now** — committed, spec'd, in progress. Each item links to its `docs/features/<slug>/` (it
+  doesn't restate the spec) + a status.
+- **Next** — problems/opportunities, deliberately *not* yet spec'd, ordered by a light **RICE**
+  score (Reach × Impact × Confidence ÷ Effort). This is the candidate pool.
+- **Later** — directional outcomes/themes, no detail.
+- **Shipped** — what landed, with a link.
+
+It stays current because the pipeline updates it: **`specify` promotes a feature to Now**, and
+**`ship` moves it to Shipped** — delivery itself keeps the roadmap in sync, so it doesn't rot. It
+carries a one-line "direction, not a promise" disclaimer and never carries dates.
 
 ## The implementation engine
 
