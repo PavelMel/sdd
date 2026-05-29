@@ -5,6 +5,15 @@
 > step the skill takes**, not just a name; the **description explains, in plain words, what will
 > happen** — written so a first-year junior can pick correctly without a senior beside them.
 
+## The one rule that matters most
+
+**Never ask dryly.** The most common failure is a terse, jargon-dense question — a few words plus acronyms, no context — that forces the user to already know the project to answer. Fix it two ways, every time:
+
+1. **Gloss every technical term inline, on first use** — the plain meaning in parentheses, right there. Not «order by RICE» but «order by RICE — a quick score, Reach × Impact × Confidence ÷ Effort, where higher = more value per unit of work». Not «forces a worktree» but «forces a worktree — a separate working copy of the repo so two agents don't edit the same files». The reader should never have to look a term up to choose.
+2. **Spend the words on the WHY and the trade-off**, not the WHAT. A short label is fine; the *description* is where you explain — in plain language — what happens, what you gain and lose, and the hidden catch.
+
+If a question reads like a config dump or a spec excerpt, it's wrong. Write it as if explaining the choice to a capable colleague who just joined and doesn't know your acronyms yet. **More explanation always beats less here** — a long, clear description is a feature, not bloat.
+
 ## Shape
 
 - **`question`** — 3–4 sentences in three blocks:
@@ -62,6 +71,37 @@
   description: "Прибираю рішення. Якщо воно обов'язкове — переформулюю опції і питаю ще раз; якщо опціональне — лишаю без заміни."
 ```
 
-## Why (feedback, 2026-05-23)
+## Dry → explanatory (worked rewrite)
 
-The user is a PM, methodist, or junior dev opening the repo for the first time. Terse English questions give them neither the substance of the decision nor the difference between options. Verbatim: «Треба щоб пояснення були ще більш зрозумілими для людей котрі буквально джуни в розробці».
+```
+# TOO DRY (jargon-dense, no context — the failure to avoid):
+Question: "Prioritize Next by RICE or manual?"
+Options:
+  - label: "RICE"
+    description: "RICE score, ordered desc."
+  - label: "Manual"
+    description: "Manual order."
+
+# EXPLANATORY (context + why + glossed terms — do this):
+Question:
+  "How should we decide the ORDER of the not-yet-started ideas in the roadmap's «Next» list?
+   This only affects which problem we pick up next — nothing is committed yet, and you can always
+   reorder. The trade-off: a scoring formula is more objective but takes a minute per idea; eyeballing
+   it is faster but drifts with mood. Read both options below."
+Options:
+  - label: "Score each idea (Recommended)"
+    description: "I rate every Next idea with RICE — a quick score = Reach (how many users it touches) ×
+      Impact (how much it moves the needle, 3 down to 0.25) × Confidence (how sure we are, as a %) ÷
+      Effort (rough person-weeks). It gives one sortable number per idea, so «Next» orders itself by
+      value-per-effort. You can still override any ranking by hand. Costs ~a minute of estimating per idea."
+  - label: "Just order them by hand"
+    description: "No formula — you (or I) drag the ideas into the order that feels right; row position =
+      priority. Faster and fine for a short list, but with many ideas it gets subjective and the order
+      tends to drift over time. You can switch to scoring later if the list grows."
+```
+
+The dry version is unanswerable without knowing what RICE is; the explanatory version teaches the term in the act of asking and makes the trade-off obvious.
+
+## Why (feedback, 2026-05-23 + reinforced 2026-05-29)
+
+The user is a PM, methodist, or junior dev opening the repo for the first time. Terse English questions give them neither the substance of the decision nor the difference between options. Verbatim (2026-05-23): «Треба щоб пояснення були ще більш зрозумілими для людей котрі буквально джуни в розробці». Reinforced (2026-05-29): «при опитуваннях треба більш explanatory запитання і варіанти відповідей, бо зараз клод доволі сухо опитує і багато термінів на короткий текст» — i.e. the dryness + term-density was still happening, so this file now leads with the "never ask dryly / gloss every term" rule above.
