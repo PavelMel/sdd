@@ -141,6 +141,16 @@ def main() -> int:
         check(cm_entry is not None and bool(cm_entry.get("source")),
               ".agents marketplace lists the 'sdd' plugin with a source",
               ".agents/plugins/marketplace.json has no 'sdd' plugin entry with a source")
+        # Codex CANNOT install a plugin whose local path is the marketplace root: it strips `./`
+        # and rejects the empty remainder (codex-rs marketplace.rs, resolve_local_plugin_source_path)
+        # — the entry is silently skipped and the marketplace lists zero plugins. The self-marketplace
+        # therefore must use the git `url` object form pointing back at this repo.
+        cm_src = (cm_entry or {}).get("source")
+        check(isinstance(cm_src, dict) and cm_src.get("source") == "url"
+              and str(cm_src.get("url", "")).startswith("https://github.com/"),
+              ".agents marketplace 'sdd' source is the git url form (root-local './' is uninstallable in codex)",
+              f".agents marketplace 'sdd' source must be {{'source': 'url', 'url': 'https://github.com/…'}} — "
+              f"codex silently skips a root-local './' plugin; got {cm_src!r}")
 
     installer = ROOT / "install.sh"
     check(installer.exists() and installer.read_text().startswith("#!/usr/bin/env bash"),
