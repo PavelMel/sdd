@@ -60,7 +60,9 @@ Rules for filling it:
   on what to eyeball. This *is* the per-gate review checklist.
 - **Run next** — the next command in **`/sdd:<name> <slug>`** form inside a fenced code block (so the
   user copies it in one click). `/clear` is step 1 and **mandatory** for a forward backbone handoff.
-  Add a `↳ or …` skip-alternative **only** when one genuinely exists (see the table).
+  Add a `↳ or …` skip-alternative **only** when one genuinely exists (see the table). The XS/S
+  skip-alternatives come from the **fast lane** in [`size-matrix.md`](./size-matrix.md) — each is an
+  N/A condition the user confirms, never an automatic skip.
 - Keep the `<slug>` substituted with the real slug — never leave the literal `<slug>` in the printed
   block.
 
@@ -71,21 +73,21 @@ Rules for filling it:
   to iterate; *Run next* = `/sdd:implement <slug>` (fix), then re-review the changed surface.
 - **Terminal** (`ship`): there is no `/sdd` successor. *Run next* becomes **Done** — the PR command/URL
   + «merging to main is your call»; still print *What I did* + *Review* (the changelog + PR).
-- **Utility** (`classify-size`, `glossary`, `decide-adr`, `roadmap`): called ad-hoc, not a gate.
-  `/clear` is **optional** (recommend it only if the context is large); *Run next* = «resume your
-  backbone stage», naming the likely one (e.g. `/sdd:design <slug>`). Print *What I did* + *Review*
-  (the one file it wrote).
+- **Utility** (`classify-size`, `glossary`, `decide-adr`, `roadmap`, `fix`): called ad-hoc, not a
+  gate. `/clear` is **optional** (recommend it only if the context is large); *Run next* = «resume
+  your backbone stage», naming the likely one (e.g. `/sdd:design <slug>`). Print *What I did* +
+  *Review* (the one file it wrote).
 
 ## Canonical sequence (stage → review-files → next)
 
 | Stage | Review before continuing (files written) | Run next |
 |---|---|---|
 | `survey` | `docs/architecture-map.md` (+ scaffold `tasks.json` on greenfield) | `/sdd:specify <slug>` |
-| `specify` | `docs/features/<slug>/spec.md` | `/sdd:clarify <slug>` |
+| `specify` | `docs/features/<slug>/spec.md` | `/sdd:clarify <slug>` ↳ or `/sdd:design <slug>` (XS/S, zero §8 OQ — fast lane) |
 | `clarify` | `docs/features/<slug>/spec.md` (tightened) | `/sdd:glossary <slug>` ↳ or `/sdd:design <slug>` |
-| `design` | `sad.md` (C4 §3/§5 + `target_surfaces`) + `adr/` | `/sdd:sequences <slug>` |
-| `sequences` | `sad.md` §6 (flows) | `/sdd:data-model <slug>` |
-| `data-model` | `data-model.md` + staged `migrations/` | `/sdd:api <slug>` |
+| `design` | `sad.md` (C4 §3/§5 + `target_surfaces`) + `adr/` | `/sdd:sequences <slug>` ↳ or `/sdd:data-model <slug>` (XS/S, no multi-step flow — fast lane) |
+| `sequences` | `sad.md` §6 (flows) | `/sdd:data-model <slug>` ↳ or `/sdd:api <slug>` (XS/S, no schema change — fast lane) |
+| `data-model` | `data-model.md` + staged `migrations/` | `/sdd:api <slug>` ↳ or `/sdd:tasks <slug>` (XS/S, no contract change — fast lane) |
 | `api` | `contracts/openapi.yaml` (+ `events.md`, `api-sync-report.md`) | `/sdd:tasks <slug>` |
 | `tasks` | `tasks/` + `tasks.json` | `/sdd:plan-tests <slug>` ↳ then `/sdd:implement <slug>` |
 | `plan-tests` | `test-plan.md` (or `spec.md` `## Test plan` for XS/S) | `/sdd:implement <slug>` |
@@ -96,6 +98,7 @@ Rules for filling it:
 | `glossary` | `CONTEXT.md` | resume — e.g. `/sdd:design <slug>` |
 | `decide-adr` | `adr/NNNN-<title>.md` | resume — `/sdd:tasks <slug>` or `/sdd:plan-tests <slug>` |
 | `roadmap` | `docs/roadmap.md` | resume your backbone stage |
+| `fix` | `_fixes/<date>-<short>.md` + the diff (+ the spec patch if any) | resume — or `/sdd:review <slug>` when the fix was wide (>5 files / cross-module) |
 
 ## Discipline
 

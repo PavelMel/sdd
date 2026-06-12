@@ -1,7 +1,7 @@
 # SDD — Spec-Driven Development for Claude Code
 
 A self-contained Claude Code plugin that carries a feature from a one-line idea to
-**reviewed, verified, shipped** code through **16 atomic, stack-agnostic skills** and a
+**reviewed, verified, shipped** code through **17 atomic, stack-agnostic skills** and a
 **TDD implementation engine** — with a living roadmap above the per-feature flow.
 
 Every skill is Socratic (it walks decisions with you, it doesn't dump a wall of output),
@@ -129,6 +129,7 @@ flowchart LR
         CS[classify-size]
         GL[glossary]
         ADR[decide-adr]
+        FX[fix]
     end
     SH --> done([shipped: PR + changelog])
 ```
@@ -175,6 +176,10 @@ end: a reviewed, verified change with a changelog and an open PR — merging to 
 - **classify-size** — size the feature XS/S/M/L/XL (writes `.size`); later skills read it to decide MVP vs full depth. Run it at the start, or any time scope changes.
 - **glossary** — capture a domain term in `CONTEXT.md` with a definition. Run it whenever a new term shows up; `design` and the spec read the glossary.
 - **decide-adr** — write a standalone ADR after the fact, when `tasks` (or a review) flags a decision that needs recording but wasn't captured during `design`.
+- **fix** — the **bugfix entry point**: reproduce, trace the symptom to the spec's acceptance
+  criteria (regression / ambiguous AC / uncovered gap), pin it with a failing test, apply the
+  minimal fix through the same gate `implement` runs, then patch the spec and write a fix record
+  under `_fixes/`. Works on a repo with no specs at all (fixes code-first, recommends `survey`).
 
 ## Interview depth (easy / medium / hard)
 
@@ -409,6 +414,29 @@ Three notes on the first run:
   [Interview depth](#interview-depth-easy--medium--hard)).
 - Artifacts land in `docs/features/<slug>/`.
 
+### Fast path (XS)
+
+A small feature doesn't need the full backbone. For XS/S the optional stages are skipped **when
+their work doesn't exist** — and the decision is made for you at each handoff: the stage's *Run
+next* shows the skip as a `↳ or …` alternative (based on `.size` + the stage's N/A condition),
+and you pick it. Example — a config-toggle-sized feature in one session:
+
+```text
+/sdd:specify  rate-limit-bump --depth=easy   # spec came out with zero open questions →
+                                             #   handoff offers: ↳ or /sdd:design (skip clarify)
+/sdd:design   rate-limit-bump                # one actor, no multi-step flow, no schema change →
+                                             #   handoff offers: ↳ or /sdd:api — or straight to tasks
+/sdd:tasks    rate-limit-bump                # never skipped: implement consumes tasks.json
+/sdd:implement rate-limit-bump               # test plan lives inline in spec.md for XS/S
+/sdd:review   rate-limit-bump
+/sdd:ship     rate-limit-bump
+```
+
+The skip conditions (`clarify` — zero open questions; `sequences` — no multi-step flow;
+`data-model` — no schema change; `api` — no contract change; `plan-tests` — inline in the spec)
+are canonical in [`skills/_shared/size-matrix.md`](./skills/_shared/size-matrix.md) — they're
+**N/A conditions, not size defaults**: an XS feature *with* a migration still runs `data-model`.
+
 ### When a stage refuses
 
 Stages are gated: each one **hard-refuses when the artifact it consumes is missing** and names the
@@ -433,6 +461,21 @@ scripts/          validate_plugin.py (CI gate: manifests + skill/agent frontmatt
 skills/_shared/   canonical socratic-loop / critic / size-matrix / ask-style / interview-depth / diagram-presentation / surfaces / handoff / tool-adapters (referenced, not duplicated)
 skills/<name>/    SKILL.md spine + references/ (heavy detail) + templates/ (output scaffolds)
 ```
+
+## Roadmap
+
+Directions under consideration — not promises, no dates:
+
+- **`sync`** — spec↔code drift detection: re-derive what the code actually does and diff it
+  against the spec/SAD, so long-lived features don't quietly outgrow their documents.
+- **Traceability matrix + adherence score** — `review`/`ship` emit a single AC × (flow / contract
+  / task / test / commit) matrix with a coverage score, instead of prose-only tracing.
+- **Tracker integration** — `tasks.json` ⇄ Jira / Linear / GitHub Issues two-way sync (today the
+  export is one-shot and copy-paste).
+- **Constitution file** — a repo-level set of inviolable rules (security, compliance, style) every
+  stage reads and the validator enforces, complementing the per-feature artifacts.
+- **MCP exposure** — pipeline state (`.size`, stage progress, gate results) served over MCP so
+  external tools and dashboards can read where every feature stands.
 
 ## License
 

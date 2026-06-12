@@ -45,6 +45,31 @@ Artifact depth ∝ feature size. XS/S → minimal set; M+ → full.
 | test-plan — `plan-tests` | inline in spec | separate file |
 | implementation — `implement` | yes | yes |
 
+## The XS/S fast lane
+
+For XS/S features the backbone collapses to a **fast lane**: the always-on stages plus only the
+optional stages whose work actually exists. The skip decision is made **at the handoff** — the
+producing stage's *Run next* offers the `↳ or` alternative and the **user** picks it; a skill never
+auto-skips a downstream stage. Every condition is a **«skip when N/A»** condition, never «skip
+always»: an XS feature *with* a schema change still runs `data-model`.
+
+| Stage | Skip when (the N/A condition) | Who offers the skip |
+|---|---|---|
+| `clarify` | the spec came out with **zero §8 open questions** and no AC was flagged ambiguous during specify | `specify`'s handoff |
+| `sequences` | **one actor and no multi-step runtime flow** — a single request/response or a pure rule change; nothing an `alt`-branch diagram would reveal | `design`'s handoff |
+| `data-model` | **no schema change** — no new entity, column, index, or migration | `sequences`' handoff |
+| `api` | **no contract change** — no new/changed endpoint, event, CLI command, or public signature (the skill also self-skips on «no external interface») | `data-model`'s handoff |
+| `plan-tests` | never fully skipped at XS/S — it **collapses to the inline `## Test plan`** in `spec.md` (cheap); skip entirely only when every task's DoD already names its test | `tasks`' handoff |
+
+**Never skippable:** `specify` (the spec is the trace anchor), `design` (declares `target_surfaces`
++ the ADR gate), `tasks` (`implement` consumes `tasks.json`), `implement`, `review`, `ship`. The
+shortest legal route is therefore `specify → design → tasks → implement → review → ship` — an XS
+feature closes in one session.
+
+When several consecutive stages are N/A, walk the conditions in order at each handoff and jump to
+the first stage whose condition does **not** hold (skipping `sequences` moves its `data-model`
+skip-question into `design`'s handoff, and so on).
+
 ## Surface count is a second scaling axis
 
 Size (XS–XL) is the *depth* dial; the number of **target surfaces** a feature declares (in `design`, written to `sad.md` frontmatter `target_surfaces` → [`./surfaces.md`](./surfaces.md)) is a second, *breadth* axis on the artifact set. Each surface adds its own work: a UI surface (`web-frontend` / `mobile-app` / `desktop-app`) adds the `ui` task layer, UI-driven §6 flows, and the component / visual-regression / e2e-through-UI test tiers; a `cli` / `worker` / `library-sdk` surface adds its own contract form + flows. So a multi-surface feature (`[backend-service, web-frontend]`) is genuinely **larger** than a single-surface one of the same XS/S/M class — no new column here, but expect more tasks, more flows, and more test rows per extra surface.
