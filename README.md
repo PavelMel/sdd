@@ -22,7 +22,8 @@ dial decides how much the skill decides for you vs. interrogates you with trade-
 After updating to a new release: re-run `/plugin install sdd@sdd`, then `/reload-plugins`.
 
 **Codex CLI** — `cd` into your project first: the script installs into the **current directory**
-(`.agents/skills/` + `.codex/agents/`). Add `--global` after `codex` to install under `~` instead:
+(`.agents/skills/` + `.codex/agents/`). Add `--global` after `codex` to install under `~` instead,
+or `--prefix DIR` to install under an arbitrary directory (useful for trying it out in a sandbox):
 
 ```sh
 cd your-project
@@ -41,11 +42,20 @@ codex plugin marketplace add genkovich/sdd
 then **inside codex** run `/plugins`, switch to the `sdd` marketplace tab and pick
 **Install plugin**. One naming nuance: the marketplace install registers the **original** skill
 names (`$specify`), while the installer script prefixes them — `$sdd-specify` — because bare
-names like `review` / `design` / `api` collide with generic skills. Pick one of the two paths,
-not both, or the skill list shows each skill twice.
+names like `review` / `design` / `api` collide with generic skills. **Pick one of the two paths,
+not both** — they register different names for the same skills, so running both shows every
+skill twice. To undo the script install: re-run `install.sh codex --uninstall` from the same
+directory (or with the same `--global` / `--prefix`). To undo the marketplace install: `/plugins`
+→ the sdd tab → uninstall (or remove the `[plugins."sdd@…"]` entry from `~/.codex/config.toml`).
+The script warns when it detects a marketplace install already registered.
+
+> **Windows note.** The installer is a bash script — run it from Git Bash or WSL. The directories
+> it writes (`.agents/`, `.codex/`, `.cursor/`) start with a dot, which Explorer hides by
+> default — enable «Hidden items» (or `dir /a`) to see them.
 
 **Cursor** (2.4+) — the same script; `cd` into your project first (installs into
-`.cursor/skills/` + `.cursor/agents/` of the current directory; `--global` for `~`):
+`.cursor/skills/` + `.cursor/agents/` of the current directory; `--global` for `~`,
+`--prefix DIR` for an arbitrary directory):
 
 ```sh
 cd your-project
@@ -86,7 +96,21 @@ gate) + *Run next* — **`/clear`**, then the next `/sdd:…` command in a fence
 click. The `/clear` matters because each stage is gated and **re-reads its inputs from disk**, so it
 needs no carryover — clearing keeps the context small and stops one stage's chatter from drifting into
 the next. (Loop-backs are the exception — when `review` bounces back to `implement`, you stay in
-context to iterate; utilities make `/clear` optional.)
+context to iterate; utilities make `/clear` optional.) It looks like this:
+
+```md
+## ✅ specify — checkout-discounts
+
+**What I did**
+- wrote docs/features/checkout-discounts/spec.md — size M (from .size); proposed commit `spec: checkout-discounts`
+
+**Review before continuing**
+- docs/features/checkout-discounts/spec.md — goals, user stories, the §5 acceptance criteria
+
+**Run next**
+1. /clear — mandatory (fresh context; the next stage re-reads its inputs from disk)
+2. then run:  /sdd:clarify checkout-discounts
+```
 
 ## The flow
 
@@ -351,9 +375,13 @@ Docker probe for the integration tier.
 
 ## Quick start (idea → shipped)
 
+The argument every stage takes is the **feature slug** — a kebab-case name you make up once at
+the start (here `checkout-discounts`). It becomes the folder every artifact lands in —
+`docs/features/checkout-discounts/` — and is how each stage finds the previous stage's files,
+so use the **same slug at every stage**.
+
 ```text
 /sdd:survey                             # once per repo: map the current architecture
-/sdd:classify-size checkout-discounts   # optional: size it first
 /sdd:specify       checkout-discounts   # interview → spec (reads the architecture map)
 /sdd:clarify       checkout-discounts
 /sdd:design        checkout-discounts
@@ -371,7 +399,27 @@ Docker probe for the integration tier.
 > printing the next `/sdd:…` command to copy (the handoff block). Loop-backs (`review` → `implement`)
 > stay in context; utilities make `/clear` optional.
 
-Artifacts land in `docs/features/<slug>/`.
+Three notes on the first run:
+
+- **You don't need `classify-size` to start** — `specify` classifies the feature and writes
+  `.size` itself when it's absent. Run `/sdd:classify-size <slug>` only to size it *before*
+  specifying, or to re-classify when scope changes.
+- **Skip the depth question** by passing the dial inline: `/sdd:specify checkout-discounts
+  --depth=easy` (also on `clarify` / `design`; values `easy|medium|hard` — see
+  [Interview depth](#interview-depth-easy--medium--hard)).
+- Artifacts land in `docs/features/<slug>/`.
+
+### When a stage refuses
+
+Stages are gated: each one **hard-refuses when the artifact it consumes is missing** and names the
+stage to run first. A refusal is not an error — it's the pipeline telling you which step was
+skipped. The ones you're most likely to meet:
+
+| Refusal | What it means | What to do |
+|---|---|---|
+| `design`: «run `specify` / `glossary` first» | there's no `spec.md` or `CONTEXT.md` for this slug yet (or the slug is spelled differently) | run `/sdd:specify <slug>`; check the slug matches the folder under `docs/features/` |
+| `api`: «run `data-model` first» | the contract is derived from the data model's entities — it can't be invented field-by-field | run `/sdd:data-model <slug>` |
+| `tasks`: «no Accepted ADR» | `design` spawned no ADR (rare — usually a sign the SAD walk was cut short) | run `/sdd:decide-adr <slug>` for the key decision, or re-run `/sdd:design <slug>` |
 
 ## Repository layout
 

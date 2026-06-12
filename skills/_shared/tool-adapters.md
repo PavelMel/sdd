@@ -17,7 +17,12 @@
 | Spawn a subagent (`subagent_type: "sdd:researcher"`) | the named plugin agent | custom agent `sdd-researcher` installed into `.codex/agents/` (dispatch via `/agent`), or run the agent file's instructions inline | subagent `sdd-researcher` installed into `.cursor/agents/`, or inline |
 | `TeamCreate` / `Workflow` (the `implement` engine modes) | native | sequential single-agent TDD — already the documented fallback floor | same as Codex |
 | Fresh context between stages | `/clear` | `/new` | start a new chat |
-| `model:` / `effort:` frontmatter | honored | advisory — the host ignores it | advisory — the host ignores it |
+| `model:` / `effort:` frontmatter | honored | advisory — the installer rewrites the generated agents' `model:` to `inherit`; the frontmatter in the verbatim skill/agent copies stays as documentation | same as Codex |
+| Shared artifacts (`.size`, `spec.md` + the other `docs/features/<slug>/…` files, `.claude/sdd.local.md`) | repo-relative files the **model itself** reads/writes with its file tools | identical — no host involvement, so they work unchanged; `.claude/` is just a directory in the repo here, not a host config dir | same as Codex |
+
+The `CLAUDE_CODE_*` env vars the roster mentions (`CLAUDE_CODE_SUBAGENT_MODEL`,
+`CLAUDE_CODE_EFFORT_LEVEL`, `CLAUDE_CODE_FORK_SUBAGENT`) are **Claude Code-only** — Codex CLI and
+Cursor ignore them; use the host's own model settings instead.
 
 ## The rule
 

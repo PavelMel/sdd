@@ -30,6 +30,14 @@ These agents are **plugin-namespaced**. Spawn each with `subagent_type: "sdd:<na
 
 So when a skill says «dispatch the `explorer` agent», the call is `subagent_type: "sdd:explorer"`. If the namespaced agent isn't available at runtime, fall back to the general-purpose (or `Explore`) agent the skill names, passing the same prompt.
 
+### Cross-tool dispatch
+
+The `subagent_type: "sdd:<name>"` form is **Claude Code-only** — it's the id the plugin loader
+registers. Under **Codex CLI / Cursor** the installer generates a custom agent named `sdd-<name>`
+(into `.codex/agents/` / `.cursor/agents/`); dispatch that, or — when the host has no agent
+mechanism in reach — run the agent file's instructions **inline** in the current context. Same
+degrade-don't-block rule and the full mapping table: [`tool-adapters.md`](./tool-adapters.md).
+
 ## Override precedence (highest wins)
 
 ```
@@ -38,6 +46,7 @@ env var  >  per-invocation (the Agent call)  >  frontmatter  >  session
 
 - **`model`** env: `CLAUDE_CODE_SUBAGENT_MODEL`. Values: `haiku|sonnet|opus|inherit|<full-model-id>`.
 - **`effort`** env: `CLAUDE_CODE_EFFORT_LEVEL`. Values: `low|medium|high|xhigh|max|<number>` (`xhigh`/`max` only on Opus 4.8 / 4.7).
+- The `CLAUDE_CODE_*` env vars are **Claude Code-only** levers — Codex CLI / Cursor ignore them; pick the model in the host's own settings there.
 - Per-project overrides live in `.claude/sdd.local.md` as `model_<role>` / `effort_<role>` keys (see the implement settings).
 
 > **Caveat (verify on your build).** Some Claude Code builds have reported the `effort:` *frontmatter*

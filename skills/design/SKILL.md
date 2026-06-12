@@ -33,7 +33,7 @@ Architect / Tech Lead (drives everything). PM is consulted only on §10 Quality 
 
 - `<slug>` — same feature slug used by every earlier stage.
 - **Gate (hard-refuse if missing):** `docs/features/<slug>/spec.md` AND `docs/features/<slug>/CONTEXT.md`. If either is absent → STOP and point: «run `specify <slug>` / `glossary <slug>` first — design reads the spec's goals/NFRs and the glossary's roles as canonical».
-- (Optional) `docs/features/<slug>/.size` — depth hint (MVP vs Full + expected ADR count per the size matrix). Absent → default to M (full set).
+- (Optional) `docs/features/<slug>/.size` — depth hint (MVP vs Full + expected ADR count per the size matrix). Absent → default to M (full set) **and say so loudly in the handoff** — «size M (default — no `.size`; run `/sdd:classify-size <slug>`)».
 - A git repo — so the Step-3 Explore subagent can read code on a brownfield.
 - Skip if `sad.md` already has all 12 sections filled AND `adr/` has ≥1 file — suggest review instead.
 

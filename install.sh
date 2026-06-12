@@ -85,8 +85,18 @@ if [ "$UNINSTALL" = 1 ]; then
 fi
 
 # --- resolve the source tree -------------------------------------------------------------
+# cleanup also rolls back a PARTIAL install: if the script dies after the copy started but
+# before the summary (INSTALL_DONE=1), the half-copied tree + generated agents are removed —
+# the prefix is left clean, not with a silently broken install.
 CLEANUP_DIR=""
-cleanup() { if [ -n "$CLEANUP_DIR" ]; then rm -rf "$CLEANUP_DIR"; fi; }
+INSTALL_DONE=0
+cleanup() {
+  if [ -n "$CLEANUP_DIR" ]; then rm -rf "$CLEANUP_DIR"; fi
+  if [ "$INSTALL_DONE" != 1 ]; then
+    rm -rf "${SKILLS_ROOT:?}/sdd"
+    rm -f "$AGENTS_DIR"/sdd-*.toml "$AGENTS_DIR"/sdd-*.md
+  fi
+}
 trap cleanup EXIT
 
 if [ -z "$SRC" ]; then
@@ -95,12 +105,22 @@ if [ -z "$SRC" ]; then
   CLEANUP_DIR="$(mktemp -d)"
   log "downloading ${REPO}@${REF} …"
   curl -fsSL "https://codeload.github.com/${REPO}/tar.gz/${REF}" \
-    | tar -xz --strip-components=1 -C "$CLEANUP_DIR"
+    | tar -xz --strip-components=1 -C "$CLEANUP_DIR" \
+    || die "download/unpack of ${REPO}@${REF} failed — check the ref exists (e.g. --ref main or a release tag like v1.9.2) and your network"
   SRC="$CLEANUP_DIR"
 fi
 
 [ -f "$SRC/skills/specify/SKILL.md" ] \
   || die "source $SRC does not look like the sdd repo (skills/specify/SKILL.md missing)"
+
+# --- collision check: a marketplace install would list every skill twice ------------------
+# `codex plugin marketplace add` registers the ORIGINAL names ($specify); this script installs
+# the sdd- prefixed copies. Both at once → a doubled skill list. Warn, don't block (README:
+# "pick one of the two paths").
+if [ "$TOOL" = "codex" ] && [ -f "$HOME/.codex/config.toml" ] \
+   && grep -q 'plugins."sdd@' "$HOME/.codex/config.toml" 2>/dev/null; then
+  warn "a marketplace install of sdd is already registered in ~/.codex/config.toml — adding the script install too will list each skill twice (\$specify AND \$sdd-specify); pick one path (see README), or remove the marketplace plugin"
+fi
 
 # --- copy the subtree verbatim: <skills-root>/sdd/{skills,agents} ------------------------
 mkdir -p "$SKILLS_ROOT/sdd"
@@ -108,7 +128,10 @@ cp -R "$SRC/skills" "$SKILLS_ROOT/sdd/skills"
 cp -R "$SRC/agents" "$SKILLS_ROOT/sdd/agents"
 
 # --- rename pass: frontmatter `name: <base>` → `name: sdd-<base>` ------------------------
-# The repo validator guarantees the exact line `name: <dirname>`, so one deterministic sed.
+# The repo validator guarantees the exact line `name: <dirname>` AND that every skill dir name
+# matches [a-z0-9-]+ (no BRE metacharacters), so interpolating $base into the sed pattern is
+# safe on both GNU and BSD sed. A new skill with ./_+ etc. in its dir name would break this —
+# the validator rejects it first.
 n_skills=0
 for skill_md in "$SKILLS_ROOT"/sdd/skills/*/SKILL.md; do
   base="$(basename "$(dirname "$skill_md")")"
@@ -193,13 +216,14 @@ for md in sorted(src.glob("*.md")):
     (dst / f"{name}.toml").write_text(toml)
     print(f"  agent {name}.toml")
 PYEOF
-    n_agents="$(find "$AGENTS_DIR" -name 'sdd-*.toml' | wc -l | tr -d ' ')"
+    n_agents="$(find "$AGENTS_DIR" -name 'sdd-*.toml' | wc -l | tr -dc '0-9')"
   else
     warn "python3 not found — skipping Codex custom agents; skills install anyway and agent dispatch degrades to inline (see sdd/skills/_shared/agent-roster.md)"
   fi
 fi
 
 # --- summary -------------------------------------------------------------------------------
+INSTALL_DONE=1
 log ""
 log "installed sdd ($TOOL):"
 log "  skills  → $SKILLS_ROOT/sdd  (${n_skills} skills)"

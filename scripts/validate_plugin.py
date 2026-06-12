@@ -270,13 +270,38 @@ def main() -> int:
           "found the stale hyphenated /sdd- form (use /sdd:<name>) at: " + ", ".join(offenders))
 
     # --- every stage ends with the handoff block (the v1.8.1 output contract) ---
-    # Cheap, robust proxy: the SKILL.md's final step points at _shared/handoff.md.
+    # The phrase «stage-handoff block» is the contract wording every spine's final step uses;
+    # a bare `handoff.md` substring (e.g. in a passing mention) is not enough to prove the
+    # skill actually ends with the block.
     print("== handoff block ==")
     for skill_md in skill_specs:
         base = skill_md.parent.name
-        check("handoff.md" in skill_md.read_text(),
-              f"skill '{base}' points at the stage-handoff block (_shared/handoff.md)",
-              f"skill '{base}' SKILL.md never references _shared/handoff.md — every stage must end with the handoff block")
+        check("stage-handoff block" in skill_md.read_text(),
+              f"skill '{base}' emits the stage-handoff block (the literal phrase is present)",
+              f"skill '{base}' SKILL.md never says 'stage-handoff block' — every stage must end with «emit the stage-handoff block per _shared/handoff.md»")
+
+    # --- skill dir names are BRE-safe (install.sh interpolates them into a sed pattern) ---
+    print("== skill dir names ==")
+    DIRNAME_RE = re.compile(r"^[a-z0-9-]+$")
+    for skill_md in skill_specs:
+        base = skill_md.parent.name
+        check(bool(DIRNAME_RE.match(base)),
+              f"skill dir '{base}' matches ^[a-z0-9-]+$",
+              f"skill dir '{base}' must match ^[a-z0-9-]+$ — install.sh interpolates the dir name into a sed (BRE) pattern, so a dot/underscore/+ would break the rename pass")
+
+    # --- cross-tool mechanism coverage: every Claude mechanism a spine uses is mapped ---
+    # tool-adapters.md is the single Codex/Cursor mapping table; a spine that starts using a
+    # new Claude-specific mechanism without a row there strands non-Claude users.
+    print("== cross-tool mechanism coverage ==")
+    adapters_text = (ROOT / "skills" / "_shared" / "tool-adapters.md").read_text()
+    MECHANISMS = ["AskUserQuestion", "TeamCreate", "Workflow", "subagent_type", "/clear"]
+    for mech in MECHANISMS:
+        used_in = [s.parent.name for s in skill_specs if mech in s.read_text()]
+        if not used_in:
+            continue  # no spine uses it — nothing to map
+        check(mech in adapters_text,
+              f"mechanism '{mech}' (used by {len(used_in)} skill(s)) is mapped in tool-adapters.md",
+              f"mechanism '{mech}' is used by {', '.join(sorted(used_in))} but has no row in _shared/tool-adapters.md — Codex/Cursor users get no mapping for it")
 
     # --- the surface taxonomy is single-source in _shared/surfaces.md (DRY) ---
     # The two canonical tables (the taxonomy + the per-skill gating table) live ONLY here; a SKILL.md

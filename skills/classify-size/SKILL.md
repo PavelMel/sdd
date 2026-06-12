@@ -9,8 +9,9 @@ description: >
   "feature size", "is this XS or M for {slug}", "size {slug}", "/sdd:classify-size {slug}",
   "класифікуй розмір {slug}", "який розмір фічі", "XS чи M". Asks four AskUserQuestion
   (PR count / time / new module-API-migration / breaking changes), maps to a size class via
-  the shared size matrix, confirms with the user, and writes the one-line .size file. Syncs
-  with spec.md frontmatter feature_size: if present (warns on conflict).
+  the shared size matrix, confirms with the user, and writes the one-line .size file — the
+  source of truth; the feature_size: frontmatter mirrors in spec.md and sad.md are re-synced
+  to it on every (re)classification.
 ---
 
 # Skill: classify-size
@@ -41,14 +42,14 @@ PM or Tech Lead (driver of the intake phase). An architect may escalate S → M 
 3. **Map to a class** using the table in [`../_shared/size-matrix.md`](../_shared/size-matrix.md). On an edge case, name the dominant signal aloud («M because it adds a new API + 1–2 sprints, even though PR count is on the S/M border»). For an all-maximums answer, ask explicitly «needs a separate roadmap?» → yes = XL.
 4. **Confirm with the user.** `AskUserQuestion`: «Classifying as `<size>` (<one-line rationale>). Lock it in?» — `Yes` / `No, I want <X>` / `Reclassify`.
 5. **Write `.size`.** One line, plain text, only `XS`/`S`/`M`/`L`/`XL` — no comments, no frontmatter. `docs/features/<slug>/.size`.
-6. **Sync with spec frontmatter (if present).** If `docs/features/<slug>/spec.md` exists, check its `feature_size:` field. Same value → OK. Conflict → WARN and resolve with the user (update one side). Missing → suggest adding `feature_size: <size>`.
+6. **Re-sync the frontmatter mirrors (`.size` is the source of truth).** `feature_size:` lives in up to three places: the `.size` file (canonical) plus the `spec.md` and `sad.md` frontmatter (human-readable mirrors). For each of the two files that exists: same value → OK; different (a reclassification, or a hand-edited mirror) → **update the frontmatter to the new `.size` value** and say so — never leave a mirror stale; missing field → suggest adding `feature_size: <size>`. If the user insists a mirror is the right value, that's a reclassification — loop back to step 4 and re-confirm, then re-sync.
 7. **Propose commit + handoff.** `size: <slug> classified as <size>` (or fold into the intake commit if a wrapper called this). Then **emit the stage-handoff block** per [`../_shared/handoff.md`](../_shared/handoff.md) (utility variant) — *What I did* + *Review* (`.size`) + *Run next*: resume your backbone stage (e.g. `/sdd:specify <slug>`); `/clear` optional.
 
 ## Definition of Done
 
 - `docs/features/<slug>/.size` holds exactly one of XS/S/M/L/XL.
 - The user confirmed the classification (never silent).
-- If `spec.md` exists, its `feature_size:` is in sync (no drift).
+- If `spec.md` / `sad.md` exist, their `feature_size:` mirrors match `.size` (no drift; `.size` is the source of truth).
 
 ## Anti-patterns
 
