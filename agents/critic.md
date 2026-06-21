@@ -6,7 +6,7 @@ description: >
   quality leaks the per-section walk could not see. Read-only; reads the upstream artifacts itself;
   emits cited findings only. It judges coherence, it does not propose new design.
 model: opus
-effort: high
+effort: xhigh
 color: magenta
 tools: Read, Grep, Glob
 ---

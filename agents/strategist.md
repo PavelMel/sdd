@@ -8,7 +8,7 @@ description: >
   approaches, each with Name · Thesis · For-whom · Outcome-metric · Key-trade-off · Effort-signal.
   Stays product-level — no datastore/broker/framework names; that's design.
 model: opus
-effort: high
+effort: xhigh
 color: pink
 tools: Read, Grep, Glob
 ---
