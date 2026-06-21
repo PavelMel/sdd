@@ -1,7 +1,7 @@
 ---
 name: sequences
 model: inherit
-effort: medium
+effort: high
 agents: []
 description: >
   Use to add Mermaid sequenceDiagram blocks to the SAD's runtime view (sad.md §6) — one per

@@ -1,7 +1,7 @@
 ---
 name: api
 model: inherit
-effort: medium
+effort: high
 agents: []
 description: >
   Use to derive the API contract for a feature — an OpenAPI 3.1 document at

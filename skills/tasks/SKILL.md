@@ -1,7 +1,7 @@
 ---
 name: tasks
 model: inherit
-effort: medium
+effort: high
 agents: []
 description: >
   Use to break a designed feature into atomic, ≤1-day tasks with a dependency graph, a

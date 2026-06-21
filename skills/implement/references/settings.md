@@ -38,9 +38,9 @@ cmd_vet: ""
 model_test_author: sonnet     # per-role model (see _shared/agent-roster.md); inherit = session model
 model_implementer: sonnet
 model_reviewer: opus
-effort_test_author: medium    # per-role effort; raised to high on escalation
-effort_implementer: medium
-effort_reviewer: high
+effort_test_author: high      # per-role effort; raised to xhigh on escalation (once on Opus)
+effort_implementer: high
+effort_reviewer: xhigh
 dashboard_enabled: false   # true → opt into the SDD visual dashboard (the sdd-dashboard MCP server + browser UI); see skills/start
 dashboard_port: 4178       # integer — loopback port the dashboard binds (scans upward if busy); read by the server
 ```
@@ -63,7 +63,7 @@ dashboard_port: 4178       # integer — loopback port the dashboard binds (scan
 - **`dashboard_port`** — integer (default `4178`). The loopback port the dashboard binds; if busy the server scans upward (`4178..4189`) and `/sdd:start` prints the actual port. Only `127.0.0.1` is ever bound; mutating routes require the per-session capability token issued by `/sdd:start`.
 - **`model_*` / `effort_*`** — per-role model + effort for the three agents, applied when the engine spawns them (it overrides the agent's frontmatter default). Roster defaults + rationale → [`../../_shared/agent-roster.md`](../../_shared/agent-roster.md). Precedence: env var > this setting > agent frontmatter > session.
   - **Env path:** the engine also exports `CLAUDE_CODE_EFFORT_LEVEL` / `CLAUDE_CODE_SUBAGENT_MODEL` for the dispatch when these keys are set — the reliable lever (see [`agent-roster.md`](../../_shared/agent-roster.md) for why frontmatter alone may not suffice).
-  - **`.size` scaling:** the engine raises the default effort for **L/XL** features (execution agents → `high`) before dispatch, and keeps the cheap defaults for **XS/S** — a cross-module change is where reasoning depth pays off. It prints the resolved per-role model+effort in the banner.
+  - **`.size` scaling:** execution effort is already `high` by default, so for **L/XL** features the engine re-dispatches execution on a stronger model (where `xhigh` unlocks on Opus) rather than nudging effort, and keeps the defaults for **XS/S** — a cross-module change is where reasoning depth pays off. It prints the resolved per-role model+effort in the banner.
 
 ## Reading semantics
 

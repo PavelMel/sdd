@@ -1,7 +1,7 @@
 ---
 name: review
 model: opus
-effort: high
+effort: xhigh
 agents: [reviewer]
 description: >
   Use to run an independent, clean-context code review of an implemented feature against its
