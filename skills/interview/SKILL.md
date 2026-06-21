@@ -113,7 +113,7 @@ strongest bet, with reasoning in `description`.
 {one concrete verb — usually "/sdd:specify <slug>" once the idea survives}
 ```
 
-A full annotated medium-depth pass → [`examples/annotated-pass.md`](examples/annotated-pass.md).
+A full annotated medium-depth pass → [`references/annotated-pass.md`](references/annotated-pass.md).
 
 ## Hand off
 
@@ -147,7 +147,7 @@ Once they answer, resume AskUserQuestion with a new angle.
 ## References
 
 - [`references/probing-frames.md`](references/probing-frames.md) — the 6 lenses with worked before/after questions.
-- [`examples/annotated-pass.md`](examples/annotated-pass.md) — a full annotated medium-depth interview.
+- [`references/annotated-pass.md`](references/annotated-pass.md) — a full annotated medium-depth interview.
 - [`../_shared/interview-depth.md`](../_shared/interview-depth.md) — the SDD-wide easy/medium/hard dial.
 - [`../_shared/ask-style.md`](../_shared/ask-style.md) — the AskUserQuestion option-writing contract.
 - [`../_shared/handoff.md`](../_shared/handoff.md) — the stage-handoff block format.
