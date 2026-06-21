@@ -8,7 +8,7 @@ description: >
   in production (attack vectors with monitoring/churn/incident signals). Read-only; reads its inputs
   itself; emits cited findings. It surfaces problems, it does not resolve them.
 model: opus
-effort: high
+effort: xhigh
 color: red
 tools: Read, Grep, Glob
 ---

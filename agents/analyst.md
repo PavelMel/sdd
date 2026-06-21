@@ -8,7 +8,7 @@ description: >
   justifications. The Engineer lens stays abstract (latency/complexity/integration surface), never
   product or library names.
 model: opus
-effort: high
+effort: xhigh
 color: purple
 tools: Read, Grep, Glob
 ---
