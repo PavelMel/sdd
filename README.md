@@ -313,7 +313,7 @@ how much reasoning effort, and which agents it spawns:
 ```yaml
 # a skill's frontmatter
 model: opus        # haiku | sonnet | opus | inherit
-effort: high       # low | medium | high | xhigh | max
+effort: xhigh      # low | medium | high | xhigh | max
 agents: [critic]   # the agents this skill spawns
 ```
 
@@ -321,10 +321,10 @@ Model is chosen by the **kind of work**, not by taste:
 
 | Kind of work | Model | Effort | Who |
 |---|---|---|---|
-| Judgment (spec, design, review, critique, ambiguity, strategy) | `opus` | `high` | specify, clarify, design, review · `reviewer` / `critic` / `devils-advocate` / `strategist` / `analyst` |
-| Execution (write tests, write code) | `sonnet` | `medium` → `high` on escalation | `test-author`, `implementer` |
-| Research / gathering (+ web) | `sonnet` | `medium` | `researcher` (competitive / adjacent-solution research) |
-| Search / scan / derivation | `haiku` / `inherit` | `low` / `medium` | `explorer`; data-model, api, sequences, tasks |
+| Judgment (spec, design, review, critique, ambiguity, strategy) | `opus` | `xhigh` | specify, clarify, design, review · `reviewer` / `critic` / `devils-advocate` / `strategist` / `analyst` |
+| Execution (write tests, write code) | `sonnet` | `high` → `xhigh` on escalation | `test-author`, `implementer` |
+| Research / gathering (+ web) | `sonnet` | `high` | `researcher` (competitive / adjacent-solution research) |
+| Search / scan · derivation | `haiku` · `inherit` | `low` · `high` | `explorer` (scan) · data-model, api, sequences, tasks (derivation) |
 
 The nine agents (`agents/`): **explorer** (brownfield scan), **test-author** (failing tests),
 **implementer** (makes them pass), **reviewer** (independent review), **critic**
@@ -369,9 +369,9 @@ cmd_vet: ""
 model_test_author: sonnet  # per-role model + effort (see Models, effort & agents)
 model_implementer: sonnet
 model_reviewer: opus
-effort_test_author: medium # raised to high on escalation / for L-XL features
-effort_implementer: medium
-effort_reviewer: high
+effort_test_author: high   # raised to xhigh on escalation (once on Opus) / for L-XL features
+effort_implementer: high
+effort_reviewer: xhigh
 ```
 
 Command detection is a stack-agnostic cascade: settings override → Makefile targets →

@@ -1,7 +1,7 @@
 ---
 name: decide-adr
 model: opus
-effort: high
+effort: xhigh
 agents: []
 description: >
   Use to record a post-hoc or asynchronous architecture decision as a MADR ADR when it

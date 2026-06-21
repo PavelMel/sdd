@@ -11,14 +11,14 @@ Model is chosen by the **kind of work**, not by taste — judgment gets the stro
 | Agent | Kind of work | `model` | `effort` | Tools |
 |---|---|---|---|---|
 | `explorer` | brownfield scan / search (read-only) | `haiku` | `low` | Read, Grep, Glob, Bash |
-| `test-author` | write the failing test (execution) | `sonnet` | `medium` → `high` on escalation | + Write, Edit |
-| `implementer` | green + refactor + gate (execution) | `sonnet` | `medium` → `high` on escalation | + Write, Edit |
-| `reviewer` | independent review (judgment) | `opus` | `high` | Read, Grep, Glob, Bash |
-| `critic` | coherence critique (judgment) | `opus` | `high` | Read, Grep, Glob |
-| `devils-advocate` | ambiguity hunt (judgment) | `opus` | `high` | Read, Grep, Glob |
-| `researcher` | competitive / adjacent-solution research (ideation) | `sonnet` | `medium` | Read, Grep, Glob, WebSearch, WebFetch |
-| `strategist` | generate the 3 strategic approaches (judgment) | `opus` | `high` | Read, Grep, Glob |
-| `analyst` | multi-perspective review of approaches (judgment) | `opus` | `high` | Read, Grep, Glob |
+| `test-author` | write the failing test (execution) | `sonnet` | `high` → `xhigh` on escalation | + Write, Edit |
+| `implementer` | green + refactor + gate (execution) | `sonnet` | `high` → `xhigh` on escalation | + Write, Edit |
+| `reviewer` | independent review (judgment) | `opus` | `xhigh` | Read, Grep, Glob, Bash |
+| `critic` | coherence critique (judgment) | `opus` | `xhigh` | Read, Grep, Glob |
+| `devils-advocate` | ambiguity hunt (judgment) | `opus` | `xhigh` | Read, Grep, Glob |
+| `researcher` | competitive / adjacent-solution research (ideation) | `sonnet` | `high` | Read, Grep, Glob, WebSearch, WebFetch |
+| `strategist` | generate the 3 strategic approaches (judgment) | `opus` | `xhigh` | Read, Grep, Glob |
+| `analyst` | multi-perspective review of approaches (judgment) | `opus` | `xhigh` | Read, Grep, Glob |
 
 Rationale: judgment quality (review, critique, ambiguity, strategy, multi-perspective synthesis) is where a stronger model pays off; execution (write code/tests to a clear spec) is well served by a balanced model and escalates only when it gets stuck; a read-only scan is cheap. The **ideation trio** (`specify` step 3, gated by the depth dial) follows the same logic: `researcher` is gathering-and-citing work (balanced model + web tools), while `strategist` and `analyst` are judgment (generating real alternatives, synthesizing across lenses) and get the strongest model. (Treat model-by-role as a sound principle — the headline "stronger orchestrator + cheaper workers wins by X%" claim from the multi-agent literature did not survive verification, so we lean on role-fit, not a magic ratio.)
 
@@ -58,9 +58,9 @@ env var  >  per-invocation (the Agent call)  >  frontmatter  >  session
 
 Default effort/model scale with the feature `.size` (see [`size-matrix.md`](./size-matrix.md)):
 
-- **XS/S** → keep the roster defaults (cheap; the work is small).
+- **XS/S** → keep the roster defaults (no extra escalation; the work is small).
 - **M** → roster defaults; escalation handles the hard tasks.
-- **L/XL** → bump execution effort to `high` and let judgment agents stay `high`; a cross-module change is where reasoning depth pays off.
+- **L/XL** → judgment agents stay at `xhigh`; execution is already `high` by default, so size scaling re-dispatches execution on a stronger model (where `xhigh` unlocks on Opus) rather than nudging effort — a cross-module change is where reasoning depth pays off.
 
 A skill/engine that knows the size applies this before dispatch and says so in its banner.
 

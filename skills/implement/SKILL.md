@@ -1,7 +1,7 @@
 ---
 name: implement
 model: inherit
-effort: medium
+effort: high
 agents: [test-author, implementer, reviewer]
 description: >
   Use to implement a feature from its tasks.json with test-driven development — writes a failing

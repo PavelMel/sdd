@@ -1,7 +1,7 @@
 ---
 name: plan-tests
 model: inherit
-effort: medium
+effort: high
 agents: []
 description: >
   Use to turn a feature's acceptance criteria into a test plan before any test is written — a

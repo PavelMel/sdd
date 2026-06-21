@@ -1,7 +1,7 @@
 ---
 name: data-model
 model: inherit
-effort: medium
+effort: high
 agents: [explorer]
 description: >
   Use to design the data model AND generate the actual forward + rollback migrations in one

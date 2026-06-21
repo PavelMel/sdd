@@ -1,7 +1,7 @@
 ---
 name: survey
 model: inherit
-effort: medium
+effort: high
 agents: [explorer]
 description: >
   Use to establish the repo's architecture map the rest of the pipeline reads. Two modes: on an

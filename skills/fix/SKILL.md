@@ -1,7 +1,7 @@
 ---
 name: fix
 model: opus
-effort: high
+effort: xhigh
 agents: [explorer]
 description: >
   Use to fix a reported bug spec-first: reproduce it, trace the symptom to the owning feature's

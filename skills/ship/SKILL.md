@@ -1,7 +1,7 @@
 ---
 name: ship
 model: inherit
-effort: medium
+effort: high
 agents: []
 description: >
   Use to close the loop after review — verify the feature actually works, write the changelog /

@@ -1,7 +1,7 @@
 ---
 name: roadmap
 model: inherit
-effort: medium
+effort: high
 agents: []
 description: >
   Use to keep the portfolio layer above individual features — one living docs/roadmap.md of
