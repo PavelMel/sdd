@@ -56,6 +56,7 @@ Open that URL in a browser. That's it.
 | **Open an artifact** (tabs) | Renders markdown and **mermaid** (C4 / sequence / ER diagrams) from vendored libs, fully offline; mermaid (3.3 MB) loads lazily, only when an artifact actually contains a diagram. OpenAPI shows as plain YAML. |
 | **▶ Run next stage** / per-stage **run** | Sends `/sdd:<skill> <slug>` into your session. Claude runs the skill; the session-activity pane streams its log + the handoff. |
 | **+ new** | Runs `/sdd:specify <slug>` to start a new feature. |
+| **Change artifacts any other way** (a terminal-driven skill, `vim docs/…`) | The panel live-refreshes — `fs.watch` on `docs/` pushes a WS refresh within ~1 s. No dashboard involvement needed. |
 
 ### It's a driver, not a remote control
 
@@ -113,6 +114,7 @@ Environment overrides (handy for testing / unusual setups):
 | Browser shows **"no token in URL"** | Open the exact URL `/sdd:start` printed (the token authorises the session). |
 | **"project dir unresolved"** | Run `/sdd:start` inside the project (it hands the real path over), or set `CLAUDE_PROJECT_DIR`. |
 | A click does nothing | The session is busy or waiting on a question in your terminal — the command is queued; it runs when Claude is idle at the prompt. |
+| The panel doesn't update when files change | The docs watcher wasn't armed (the server didn't know your project dir yet) — run `/sdd:start`. Note: changes inside a **symlinked** subdirectory of `docs/` don't emit watch events; keep artifacts on real paths. |
 | Port differs from 4178 | It was busy; `/sdd:start` prints the actual port it bound. |
 
 ---
@@ -134,14 +136,35 @@ Environment overrides (handy for testing / unusual setups):
                        └──────────────────────────────────────┘
 ```
 
-- `server.ts` — MCP server + `Bun.serve()`, lifecycle hygiene, project-root resolver.
+- `server.ts` — MCP server + `Bun.serve()`, lifecycle hygiene, project-root resolver, WS keep-alive pings.
 - `http.ts` — the HTTP layer (routing, token/origin gating, the read-only JSON API) behind an
   `HttpCtx` interface — testable without an MCP/stdio boot.
 - `state.ts` — disk → pipeline-stage derivation (the signal→stage table).
 - `channel.ts` — outbound `dashboard_*` tools + the inbound command allowlist.
+- `watch.ts` — live refresh: `fs.watch` on `<project>/docs/` (recursive), 250 ms coalescing window →
+  one `refresh` WS frame (slug-scoped when a single feature changed). Never reads file content —
+  it only maps a changed path to a frame; auto-re-arms if `docs/` is missing or the watcher dies.
 - `paths.ts` — `docs/` containment + extension allowlist.
 - `frontmatter.ts` — the one YAML-frontmatter parser (artifacts + settings).
 - `../dashboard/` — the static UI (vanilla JS) + vendored render libs (`marked`, lazy `mermaid`).
+
+### WS frames (server → browser)
+
+The WS channel is **push-only** (the browser talks back over HTTP). Every frame carries
+`session_id` + `ts` plus:
+
+| `type` | Sent when | Payload |
+|---|---|---|
+| `hello` | a client connects | `project` |
+| `project` | `/sdd:start` hands over the project dir | `project` |
+| `log` | Claude calls `dashboard_log` | `message`, `slug`, `stage`, `level` |
+| `update` | Claude calls `dashboard_update` | `slug`, `stage`, `status`, `progress`, `message` |
+| `done` | Claude calls `dashboard_done` | `slug`, `stage`, `summary`, `verdict`, `review_files`, `next_command` |
+| `refresh` | `docs/` changed on disk (fs.watch), and after `dashboard_update`/`done` | optional `slug` — scoped reload; absent → reload everything |
+| `command` | a browser click queued a command | `command`, `request_id` |
+
+On (re)connect the browser re-syncs fully from disk, so frames missed while disconnected are never
+lost state — only lost narration.
 
 ## Testing
 
@@ -158,9 +181,11 @@ bun test tests/     # state derivation, path-security boundary, command allowlis
 The suites: `state.test.ts` (signal→stage table, skipped-vs-pending, tracker parsing, review-verdict
 precedence, shipped regex), `paths.test.ts` (traversal / symlink escape / `.git` refusal / extension
 allowlist — throwaway `mkdtemp` trees), `channel.test.ts` (allowlist + injection cases),
-`http.test.ts` (token/Origin gating, command relay, removed-route regressions), `frontmatter.test.ts`.
+`http.test.ts` (token/Origin gating, command relay, removed-route regressions),
+`watch.test.ts` (path→frame classification, batch coalescing, the watcher state machine against
+injected fakes — the real `fs.watch` contract is timing-flaky in CI, so it is verified by a live
+smoke run instead), `frontmatter.test.ts`.
 
-**Deferred (designed, not built):** live `fs.watch` updates (so terminal-driven runs also refresh the
-dashboard) and multi-session parallelization (a shared hub with leader election). The MVP's choices —
-token per session, `session_id`-tagged WS frames, `/sdd:start` project handover — are already
-hub-compatible.
+**Deferred (designed, not built):** multi-session parallelization (a shared hub with leader
+election). The MVP's choices — token per session, `session_id`-tagged WS frames, `/sdd:start`
+project handover — are already hub-compatible.

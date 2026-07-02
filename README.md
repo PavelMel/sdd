@@ -508,30 +508,66 @@ Directions under consideration — not promises, no dates:
 ## The visual dashboard (opt-in)
 
 The roadmap's *"MCP exposure — pipeline state served over MCP so external tools and dashboards can read
-where every feature stands"* has shipped — and gained a control surface. The plugin now carries an
-**`sdd-dashboard` MCP server** (`server/`, Bun + TypeScript) that auto-starts at session open and, when
-enabled, serves a **local browser dashboard** (`dashboard/`) on `127.0.0.1`. It:
+where every feature stands"* has shipped — and gained a control surface. The plugin carries an
+**`sdd-dashboard` MCP server** (`server/`, Bun + TypeScript) that auto-starts with every Claude Code
+session (declared in `.mcp.json`) and, when enabled, serves a **local browser dashboard** (`dashboard/`)
+on `127.0.0.1`. It reads every feature off disk (`docs/features/<slug>/`), shows its pipeline as a
+per-step checklist — `done` / `skipped` / `pending` / `blocked` — and renders each artifact (markdown +
+**mermaid** diagrams from vendored libs, fully offline; OpenAPI as plain YAML). Pure-markdown users who
+never opt in are unaffected — nothing binds, nothing opens.
 
-- **Reads** every feature off disk (`docs/features/<slug>/`) and shows its pipeline as a per-step
-  checklist — `done` / `skipped` / `pending` / `blocked` — derived from the artifacts present (so an XS
-  feature shows *skipped* stages, not gaps). It renders each artifact: markdown + **mermaid** C4 /
-  sequence / ER diagrams from **vendored** libs (offline, no CDN; mermaid lazy-loads only when a
-  diagram is actually on screen). OpenAPI shows as plain YAML. The dashboard is **read-only** — it
-  never edits artifact text; all writes happen through the pipeline in the terminal.
-- **Drives the pipeline** — clicking *Run next stage* / *Create feature* sends a validated
-  `/sdd:<skill> <slug>` command **back into this live session** over the same channel mechanism the official
-  Telegram plugin uses (`notifications/claude/channel`). Claude runs the skill and streams progress + the
-  handoff back to the browser. The dashboard is a **driver + observer**, not a synchronous remote: a click
-  is consumed only while the session is idle at the prompt — otherwise it **queues** (shown honestly in the UI).
+### Launch it — three steps
 
-**Opt-in, two prerequisites.** It does nothing unless you ask for it:
+1. Install **[Bun](https://bun.sh)** (the server runtime — the same dependency the official Telegram
+   plugin uses): `curl -fsSL https://bun.sh/install | bash` or `brew install bun`.
+2. Set `dashboard_enabled: true` in your project's `.claude/sdd.local.md`
+   (see [Configuration](#configuration--claudesddlocalmd)).
+3. Run **`/sdd:start`** in your Claude Code session. The server is already running — it auto-started
+   with the session; this step just hands it your project directory, binds the port if needed, and
+   prints the URL: `http://127.0.0.1:<port>/?session=<id>&token=<capability-token>`. Open that exact
+   URL in a browser — the token in it authorises the session.
 
-1. Install **[Bun](https://bun.sh)** (the server runtime — the same dependency the Telegram plugin uses).
-2. Set `dashboard_enabled: true` in `.claude/sdd.local.md` (see [Configuration](#configuration--claudesddlocalmd)).
-3. Run **`/sdd:start`** — it hands the server your project dir, confirms the channel, and prints the URL
-   (`http://127.0.0.1:<port>/?session=<id>&token=<cap>`). Pure-markdown users who skip this are unaffected.
+A new session (or a server restart) mints a new token, so an old tab goes stale: re-run `/sdd:start`
+and open the fresh URL.
 
-**Setup, usage, config & troubleshooting:** [`server/README.md`](./server/README.md).
+### How the panel updates
+
+Three mechanisms, layered:
+
+1. **Live, from disk.** The server watches `docs/` (`fs.watch`) and pushes a refresh over the
+   WebSocket whenever an artifact changes — no matter who changed it: a dashboard-driven run, a skill
+   you ran in the terminal, or you editing `spec.md` in vim. Changes appear within ~1 second.
+2. **Enriched, from Claude.** When Claude runs a stage it also calls `dashboard_update` /
+   `dashboard_log` / `dashboard_done` — that is what feeds the live activity feed, stage transitions,
+   review verdicts and the final handoff. A terminal-only run still refreshes the artifacts
+   (mechanism 1); it just doesn't narrate.
+3. **Self-healing connection.** The server pings the WebSocket to keep it alive; if it drops anyway,
+   the browser reconnects with backoff and re-syncs everything from disk — nothing stays stale.
+
+### How you control it
+
+The **▶ Run next stage** / per-stage **run** / **+ new** buttons drive your live session — with honest
+**asynchronous** semantics:
+
+- A click sends the request to the server, which builds a validated `/sdd:<skill> <slug>` command from
+  a strict server-side allowlist and **queues** it into your Claude session — over the same channel
+  mechanism the official Telegram plugin uses (`notifications/claude/channel`).
+- The session consumes a queued command **only while idle at the prompt**. If Claude is mid-task, the
+  command waits; the status line shows `queued → running → done` and the UI never fakes synchronous
+  execution.
+- Dashboard-driven runs default to `--depth=easy`, so skills self-decide reversible calls and rarely
+  block on questions.
+- Free browser text can never become a command — only the validated skill name + slug pass the
+  allowlist.
+
+### What the panel does NOT do
+
+- It never writes to disk — artifacts are edited only by the pipeline in your terminal.
+- It has no chat input and cannot answer a blocking `AskUserQuestion` — if a stage genuinely needs a
+  human decision, the question is visible only in the terminal; answer it there and the run continues.
+- It doesn't survive a server restart — re-run `/sdd:start` for a fresh URL/token.
+
+**Setup, config & troubleshooting:** [`server/README.md`](./server/README.md).
 
 **Security:** binds loopback only; the API is read-only and every read is realpath-contained to `docs/`
 with an extension allowlist; all routes require a per-session capability token; inbound commands are built
