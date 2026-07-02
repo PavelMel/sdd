@@ -29,6 +29,7 @@ import {
 } from 'fs'
 import { join, extname, relative, sep } from 'path'
 import { docsDir, featuresDir, ALLOWED_EXT } from './paths.ts'
+import { frontmatter, parseList } from './frontmatter.ts'
 
 export type StageStatus = 'done' | 'skipped' | 'pending' | 'blocked'
 
@@ -79,28 +80,6 @@ function lsIf(path: string): string[] {
   } catch {
     return []
   }
-}
-
-function frontmatter(text: string): Record<string, string> {
-  if (!text.startsWith('---')) return {}
-  const end = text.indexOf('\n---', 3)
-  if (end === -1) return {}
-  const out: Record<string, string> = {}
-  for (const line of text.slice(3, end).split('\n')) {
-    const m = line.match(/^([A-Za-z_][\w-]*):\s*(.*)$/)
-    if (m) out[m[1]] = m[2].trim()
-  }
-  return out
-}
-
-function parseList(v: string | undefined): string[] {
-  if (!v) return []
-  let s = v.trim()
-  if (s.startsWith('[') && s.endsWith(']')) s = s.slice(1, -1)
-  return s
-    .split(',')
-    .map((x) => x.trim().replace(/^["']|["']$/g, ''))
-    .filter(Boolean)
 }
 
 function firstHeading(text: string): string | null {

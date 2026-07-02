@@ -37,6 +37,7 @@ import {
   isValidSlug,
 } from './paths.ts'
 import { listFeatures, getFeatureDetail, getRoadmap } from './state.ts'
+import { frontmatter, configValue } from './frontmatter.ts'
 import {
   DASHBOARD_TOOLS,
   handleDashboardTool,
@@ -74,18 +75,12 @@ function readConfig(): DashConfig {
   if (project) {
     try {
       const text = readFileSync(join(project, '.claude', 'sdd.local.md'), 'utf8')
-      if (text.startsWith('---')) {
-        const end = text.indexOf('\n---', 3)
-        const block = end === -1 ? '' : text.slice(3, end)
-        for (const line of block.split('\n')) {
-          const m = line.match(/^([A-Za-z_][\w-]*):\s*([^#]*)/)
-          if (!m) continue
-          const key = m[1]
-          const val = m[2].trim().replace(/^["']|["']$/g, '')
-          if (key === 'dashboard_enabled') enabled = enabled || val === 'true'
-          if (key === 'dashboard_port' && /^\d+$/.test(val)) port = Number(val)
-        }
-      }
+      const fm = frontmatter(text)
+      // Settings values carry inline `# comment` docs + optional quotes — normalize.
+      const enabledVal = configValue(fm.dashboard_enabled ?? '')
+      const portVal = configValue(fm.dashboard_port ?? '')
+      if (enabledVal === 'true') enabled = true
+      if (/^\d+$/.test(portVal)) port = Number(portVal)
     } catch {
       // no settings file — fall back to env/default
     }
