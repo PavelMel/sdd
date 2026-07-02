@@ -39,7 +39,7 @@ Question:
 
 Options:
   - label: "Зафіксувати як ADR"
-    description: "I create adr/NNNN-<decision-in-kebab>.md from the options you saw (including the rejected ones) + your rationale, Status Accepted, and add a §9 row. The file ships in this section's commit. Pick this if the choice felt genuinely contestable."
+    description: "I create adr/NNNN-<decision-in-kebab>.md from the options you saw (including the rejected ones) + your rationale, Status Accepted, and add a §9 row. The file ships in this section's commit (or its batch on quick+easy). Pick this if the choice felt genuinely contestable."
   - label: "Лишити inline"
     description: "I write the decision into the section body with a one-line rationale, no ADR file. Pick this when the choice is small-blast-radius despite having alternatives — typical for §8 crosscutting or a §5 internal-layout call."
 ```
