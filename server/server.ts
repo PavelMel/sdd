@@ -24,6 +24,7 @@ import { setProjectDir, getProjectDir } from './paths.ts'
 import { frontmatter, configValue } from './frontmatter.ts'
 import { createFetchHandler } from './http.ts'
 import { DASHBOARD_TOOLS, handleDashboardTool, type Frame } from './channel.ts'
+import { createDocsWatcher } from './watch.ts'
 
 // ---- identity + config -----------------------------------------------------
 
@@ -87,7 +88,7 @@ process.on('uncaughtException', (err) => log(`uncaught exception: ${err}`))
 // ---- WS client registry + broadcast ----------------------------------------
 
 type WSData = { session: string | null }
-type WS = { send: (data: string) => void; readyState: number; data?: unknown }
+type WS = { send: (data: string) => void; readyState: number; data?: unknown; ping?: () => void }
 const clients = new Set<WS>()
 
 function broadcast(frame: Frame): void {
@@ -100,6 +101,21 @@ function broadcast(frame: Frame): void {
     }
   }
 }
+
+// The channel is push-only, so a quiet dashboard sends nothing — and Bun's WS
+// idleTimeout would cull the silent socket every ~2 minutes. Server-side pings
+// keep it alive without any browser-side protocol.
+setInterval(() => {
+  for (const ws of clients) {
+    try {
+      ws.ping?.()
+    } catch {}
+  }
+}, 30_000).unref()
+
+// Live refresh: any change under <project>/docs pushes a refresh frame, so
+// terminal-driven runs update the browser too (not only dashboard_* calls).
+const docsWatcher = createDocsWatcher({ broadcast, log })
 
 // ---- HTTP server (lazy bind) -----------------------------------------------
 
@@ -171,6 +187,8 @@ function ensureHttp(): number {
       })
       boundPort = port
       writeUrlFile()
+      const project = getProjectDir()
+      if (project) docsWatcher.arm(project)
       log(`HTTP listening on http://127.0.0.1:${port}`)
       return port
     } catch (err) {
@@ -246,6 +264,7 @@ mcp.setRequestHandler(CallToolRequestSchema, async (req) => {
       }
       const port = ensureHttp()
       writeUrlFile() // refresh with the just-handed-over project dir
+      docsWatcher.arm(abs) // project dir may have arrived (or changed) only now
       const url = dashboardUrl()
       // NB: no inbound channel ping here. The channel is the one mechanism that
       // differs from a plain MCP tool, and a proactive ping on /sdd:start was the
@@ -318,6 +337,9 @@ function shutdown(): void {
   } catch {}
   try {
     rmSync(URL_FILE, { force: true })
+  } catch {}
+  try {
+    docsWatcher.stop()
   } catch {}
   try {
     httpServer?.stop(true) // free the port

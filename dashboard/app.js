@@ -75,7 +75,12 @@ function connectWs() {
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   const url = `${proto}://${location.host}/ws?token=${encodeURIComponent(TOKEN)}&session=${encodeURIComponent(SESSION)}`;
   ws = new WebSocket(url);
-  ws.onopen = () => { wsRetry = 0; setConn(true, 'connected'); };
+  ws.onopen = () => {
+    const isReconnect = wsRetry > 0; // read before reset
+    wsRetry = 0;
+    setConn(true, 'connected');
+    if (isReconnect) refresh(); // full re-sync — frames missed while disconnected
+  };
   ws.onclose = () => {
     setConn(false, 'disconnected');
     wsRetry = Math.min(wsRetry + 1, 6);

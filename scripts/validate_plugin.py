@@ -433,10 +433,10 @@ def main() -> int:
                       ".mcp.json sdd-dashboard invokes the `start` package script",
                       ".mcp.json sdd-dashboard args must end in the `start` script (bun run … start)")
 
-    # server/ sources — the six modules + the Bun package manifest.
+    # server/ sources — the seven modules + the Bun package manifest.
     for rel in ("server/package.json", "server/server.ts", "server/state.ts",
                 "server/channel.ts", "server/paths.ts", "server/http.ts",
-                "server/frontmatter.ts"):
+                "server/frontmatter.ts", "server/watch.ts"):
         check((ROOT / rel).exists(), f"{rel} exists", f"{rel} is missing")
     # The server package must declare the MCP SDK dependency + a `start` script.
     spkg = ROOT / "server" / "package.json"
