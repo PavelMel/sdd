@@ -38,20 +38,29 @@ run_scenario() {
   #    run cannot answer AskUserQuestion). --plugin-dir loads the sdd plugin
   #    from THIS checkout, so the eval exercises the working tree, not whatever
   #    version happens to be installed.
+  # --allowedTools lets the run actually `git commit` in the throwaway workdir —
+  # without it, acceptEdits blocks commits and commit-cadence rubrics go vacuous
+  # (0 commits observed regardless of the skill's real cadence).
   local out="$meta/run.json"
   ( cd "$work" && claude -p "$(cat "$dir/prompt.txt")" \
       --plugin-dir "$REPO_ROOT" \
       --permission-mode acceptEdits --max-turns "$MAX_TURNS" \
+      --allowedTools "Bash(git:*)" \
       --output-format json ${MODEL_ARGS[@]+"${MODEL_ARGS[@]}"} > "$out" ) || true
 
   # --output-format json is an object in some CLI versions, an array of
   # messages (result last) in others — accept both.
   local extract='if type=="array" then (last.result // empty) else (.result // empty) end'
-  local final_msg tree diff
+  local final_msg tree gitlog diff
   final_msg="$(jq -r "$extract" "$out" 2>/dev/null | tail -c 4000 || true)"
   tree="$(cd "$work" && find . -path ./.git -prune -o -type f -print | sort)"
+  gitlog="$(git -C "$work" log --oneline | head -30)"
+  # Diff vs the FIXTURE BASELINE (the root commit), not vs HEAD — so the judge sees the
+  # run's full change (committed + uncommitted) even when the run made its own commits.
+  local base
+  base="$(git -C "$work" rev-list --max-parents=0 HEAD)"
   git -C "$work" add -A
-  diff="$( { git -C "$work" diff --cached --stat HEAD | head -40; git -C "$work" diff --cached HEAD | head -400; } || true)"
+  diff="$( { git -C "$work" diff --cached --stat "$base" | head -40; git -C "$work" diff --cached "$base" | head -400; } || true)"
 
   # 3. The judge — rubric + observed outcome → one JSON verdict.
   local jp="$meta/judge-prompt.md"
@@ -60,7 +69,8 @@ run_scenario() {
     cat "$EVALS_DIR/judge-prompt.md"
     printf '\n## Rubric\n\n'; cat "$dir/rubric.md"
     printf '\n## File tree after the run\n\n```\n%s\n```\n' "$tree"
-    printf '\n## Git diff vs the fixture baseline\n\n```\n%s\n```\n' "$diff"
+    printf '\n## Git log after the run (newest first; "baseline" is the fixture commit)\n\n```\n%s\n```\n' "$gitlog"
+    printf '\n## Git diff vs the fixture baseline (the run'\''s full change, committed + uncommitted)\n\n```\n%s\n```\n' "$diff"
     printf '\n## Tail of the run'\''s final message\n\n```\n%s\n```\n' "$final_msg"
   } > "$jp"
 
