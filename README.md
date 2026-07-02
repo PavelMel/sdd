@@ -486,8 +486,8 @@ scripts/          validate_plugin.py (CI gate: manifests + skill/agent frontmatt
 skills/_shared/   canonical socratic-loop / critic / size-matrix / ask-style / interview-depth / diagram-presentation / surfaces / handoff / tool-adapters (referenced, not duplicated)
 skills/<name>/    SKILL.md spine + references/ (heavy detail) + templates/ (output scaffolds)
 .mcp.json         declares the sdd-dashboard MCP server (auto-starts at session open; opt-in via dashboard_enabled)
-server/           the dashboard MCP server (Bun + TypeScript): server.ts (MCP stdio + Bun.serve HTTP/WS), state.ts (disk→pipeline derivation), channel.ts (dashboard_* tools + command allowlist), paths.ts (docs/ scoping)
-dashboard/        the browser UI (vanilla JS, terminal-green): index.html + app.js + style.css + vendor/ (marked, mermaid, redoc — vendored, offline)
+server/           the dashboard MCP server (Bun + TypeScript): server.ts (MCP stdio + Bun.serve HTTP/WS), http.ts (routing + gating, testable), state.ts (disk→pipeline derivation), channel.ts (dashboard_* tools + command allowlist), paths.ts (docs/ scoping), frontmatter.ts (shared parser) + tests/ (bun test)
+dashboard/        the browser UI (vanilla JS, terminal-green, read-only): index.html + app.js + style.css + vendor/ (marked, mermaid — vendored, offline; mermaid lazy-loads)
 ```
 
 ## Roadmap
@@ -514,10 +514,10 @@ enabled, serves a **local browser dashboard** (`dashboard/`) on `127.0.0.1`. It:
 
 - **Reads** every feature off disk (`docs/features/<slug>/`) and shows its pipeline as a per-step
   checklist — `done` / `skipped` / `pending` / `blocked` — derived from the artifacts present (so an XS
-  feature shows *skipped* stages, not gaps). It renders each artifact: markdown, **mermaid** C4 / sequence
-  / ER diagrams, and **OpenAPI** (redoc) — all from **vendored** libs (offline, no CDN).
-- **Edits** artifact text back to disk — scoped to `docs/`, atomic `tmp+rename`, with optimistic-concurrency
-  `409` on a stale edit.
+  feature shows *skipped* stages, not gaps). It renders each artifact: markdown + **mermaid** C4 /
+  sequence / ER diagrams from **vendored** libs (offline, no CDN; mermaid lazy-loads only when a
+  diagram is actually on screen). OpenAPI shows as plain YAML. The dashboard is **read-only** — it
+  never edits artifact text; all writes happen through the pipeline in the terminal.
 - **Drives the pipeline** — clicking *Run next stage* / *Create feature* sends a validated
   `/sdd:<skill> <slug>` command **back into this live session** over the same channel mechanism the official
   Telegram plugin uses (`notifications/claude/channel`). Claude runs the skill and streams progress + the
@@ -533,9 +533,9 @@ enabled, serves a **local browser dashboard** (`dashboard/`) on `127.0.0.1`. It:
 
 **Setup, usage, config & troubleshooting:** [`server/README.md`](./server/README.md).
 
-**Security:** binds loopback only; reads/writes are realpath-contained to `docs/` with an extension
-allowlist; mutating routes require a per-session capability token; inbound commands are built **only** from
-a server-side skill + slug allowlist (browser text never becomes an arbitrary `/sdd:` command).
+**Security:** binds loopback only; the API is read-only and every read is realpath-contained to `docs/`
+with an extension allowlist; all routes require a per-session capability token; inbound commands are built
+**only** from a server-side skill + slug allowlist (browser text never becomes an arbitrary `/sdd:` command).
 
 ## License
 

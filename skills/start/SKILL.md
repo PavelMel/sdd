@@ -4,9 +4,9 @@ model: inherit
 effort: low
 agents: []
 description: >
-  Use to open the SDD visual dashboard — the local browser UI that shows every feature's
-  pipeline stage, renders its artifacts (markdown, mermaid C4/sequence/ER, OpenAPI/swagger),
-  lets you edit artifact text back to disk, and drives the pipeline by sending /sdd:<skill>
+  Use to open the SDD visual dashboard — the local read-only browser UI that shows every
+  feature's pipeline stage, renders its artifacts (markdown, mermaid C4/sequence/ER, OpenAPI
+  as plain YAML), and drives the pipeline by sending /sdd:<skill>
   commands back into this live session. Triggers on "start the dashboard", "open the SDD
   dashboard", "sdd dashboard", "/sdd:start", "show the pipeline UI", "відкрий дашборд",
   "запусти панель SDD". The sdd-dashboard MCP server auto-starts at session open (via .mcp.json),

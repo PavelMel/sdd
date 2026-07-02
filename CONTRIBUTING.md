@@ -40,6 +40,9 @@ a fixed number.)
 ### Pre-PR checklist
 
 - [ ] **`python3 scripts/validate_plugin.py` passes** (exit 0).
+- [ ] **Server change? `cd server && bunx tsc --noEmit && bun test tests/` passes** — the same
+      gate CI's `server-tests` job runs (deterministic, no network; fixtures under
+      `server/tests/fixtures/`).
 - [ ] **One canonical source / DRY.** Shared logic — the Socratic machine, the critic, the size
       matrix, the ask-style, the surface taxonomy, the handoff block — lives once in
       `skills/_shared/`. Link to it with a relative path and keep only your per-skill *delta*; never
@@ -53,6 +56,18 @@ a fixed number.)
       template-runtime path (`../spec.md`, `../sad.md`, `../contracts/…`, …) that resolves only inside
       a generated `docs/features/<slug>/` folder — those are allowlisted in the validator.
 - [ ] **References in `references/`, templates in `templates/`** — one level deep, no nested folders.
+
+### Behaviour evals (on-demand — NOT in CI)
+
+`evals/` holds end-to-end skill-behaviour scenarios (they invoke `claude -p` headlessly and an
+LLM judge — they cost tokens and are non-deterministic, so they never run in CI). When you change
+a skill's *protocol* (gates, routing, artifact shape), run the closest scenario locally:
+
+```bash
+./evals/run.sh design-gate-refusal    # or: specify-happy-path, classify-size
+```
+
+See [`evals/README.md`](./evals/README.md) for prerequisites and how to add a scenario.
 
 ## Releasing
 

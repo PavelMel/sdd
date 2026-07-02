@@ -1,9 +1,10 @@
 # SDD Visual Dashboard
 
-A local, **opt-in** browser dashboard for the SDD pipeline. It reads `docs/features/` straight off
-disk, renders every artifact, lets you edit artifact text back to disk, and **drives the pipeline** —
-a click in the browser sends a `/sdd:<skill> <slug>` command back into your live Claude Code session,
-which runs the skill and streams progress back to the browser.
+A local, **opt-in, read-only** browser dashboard for the SDD pipeline. It reads `docs/features/`
+straight off disk, renders every artifact, and **drives the pipeline** — a click in the browser sends
+a `/sdd:<skill> <slug>` command back into your live Claude Code session, which runs the skill and
+streams progress back to the browser. It never edits artifact text — all writes happen through the
+pipeline in the terminal.
 
 The whole thing is one Bun process (`server/`) that auto-starts as an MCP server when a Claude Code
 session opens. It holds the MCP channel to Claude **and** an embedded `Bun.serve()` HTTP+WS listener on
@@ -52,11 +53,9 @@ Open that URL in a browser. That's it.
 | In the browser | What happens |
 |---|---|
 | **Pick a feature** (sidebar) | See its pipeline as a per-step checklist: `done` / `skipped` / `pending` / `blocked`, derived from the artifacts on disk. An XS feature shows *skipped* stages — not gaps. |
-| **Open an artifact** (tabs) | Renders markdown, **mermaid** (C4 / sequence / ER diagrams), and **OpenAPI** (redoc) — all from vendored libs, fully offline. |
-| **edit** → **save** | Writes the artifact back to disk: scoped to `docs/`, atomic (`tmp+rename`), with a `409` if the file changed under you since you opened it. |
+| **Open an artifact** (tabs) | Renders markdown and **mermaid** (C4 / sequence / ER diagrams) from vendored libs, fully offline; mermaid (3.3 MB) loads lazily, only when an artifact actually contains a diagram. OpenAPI shows as plain YAML. |
 | **▶ Run next stage** / per-stage **run** | Sends `/sdd:<skill> <slug>` into your session. Claude runs the skill; the session-activity pane streams its log + the handoff. |
 | **+ new** | Runs `/sdd:specify <slug>` to start a new feature. |
-| **message the session…** | Free-text chat to Claude (relayed as channel content, not a command). |
 
 ### It's a driver, not a remote control
 
@@ -91,15 +90,17 @@ Environment overrides (handy for testing / unusual setups):
 ## Security model
 
 - **Loopback only.** Binds `127.0.0.1` — never a public interface.
-- **Scoped I/O.** Every read/write is `realpath`-contained to `<project>/docs/` with an extension
-  allowlist (`.md` / `.yaml` / `.yml` / `.json` / `.size`); `.git` and anything outside `docs/` is refused.
-- **Capability token.** Mutating routes (run a command, save an edit, chat) require the per-session token
-  issued by `/sdd:start` (in the URL), plus `Origin`/`Host` loopback checks — so another local page can't
-  POST to your port.
+- **Read-only, scoped I/O.** The API only ever *reads*, and every read is `realpath`-contained to
+  `<project>/docs/` with an extension allowlist (`.md` / `.yaml` / `.yml` / `.json` / `.size`);
+  `.git`, missing files, and anything outside `docs/` are refused. There is no write route.
+- **Capability token.** Every `/api` route (and the one mutating route, run-a-command — which touches
+  no disk) requires the per-session token issued by `/sdd:start` (in the URL), plus `Origin`/`Host`
+  loopback checks — so another local page can't POST to your port.
 - **No command injection.** Inbound `/sdd:` lines are built **only** from a server-side allowlist
   (validated skill name + `^[a-z0-9][a-z0-9-]*$` slug). Browser text never becomes an arbitrary command.
-- **Anti-injection contract.** The MCP `instructions` tell Claude that dashboard content is an SDD command
-  or chat — never authority to bypass a gate, approve a review, change settings, or touch files outside `docs/`.
+- **Anti-injection contract.** The MCP `instructions` tell Claude that dashboard channel content is
+  ALWAYS a server-built allowlisted SDD command — never free text, never authority to bypass a gate,
+  approve a review, change settings, or touch files outside `docs/`.
 
 ---
 
@@ -133,11 +134,31 @@ Environment overrides (handy for testing / unusual setups):
                        └──────────────────────────────────────┘
 ```
 
-- `server.ts` — MCP server + `Bun.serve()`, lifecycle hygiene, project-root resolver, the JSON API.
+- `server.ts` — MCP server + `Bun.serve()`, lifecycle hygiene, project-root resolver.
+- `http.ts` — the HTTP layer (routing, token/origin gating, the read-only JSON API) behind an
+  `HttpCtx` interface — testable without an MCP/stdio boot.
 - `state.ts` — disk → pipeline-stage derivation (the signal→stage table).
 - `channel.ts` — outbound `dashboard_*` tools + the inbound command allowlist.
 - `paths.ts` — `docs/` containment + extension allowlist.
-- `../dashboard/` — the static UI (vanilla JS) + vendored render libs (`marked`, `mermaid`, `redoc`).
+- `frontmatter.ts` — the one YAML-frontmatter parser (artifacts + settings).
+- `../dashboard/` — the static UI (vanilla JS) + vendored render libs (`marked`, lazy `mermaid`).
+
+## Testing
+
+Deterministic runtime tests live in `server/tests/` (no network, committed fixture trees under
+`tests/fixtures/`) and run in CI as the `server-tests` job:
+
+```bash
+cd server
+bun install
+bunx tsc --noEmit   # typecheck (strict, bun-types)
+bun test tests/     # state derivation, path-security boundary, command allowlist, HTTP routing
+```
+
+The suites: `state.test.ts` (signal→stage table, skipped-vs-pending, tracker parsing, review-verdict
+precedence, shipped regex), `paths.test.ts` (traversal / symlink escape / `.git` refusal / extension
+allowlist — throwaway `mkdtemp` trees), `channel.test.ts` (allowlist + injection cases),
+`http.test.ts` (token/Origin gating, command relay, removed-route regressions), `frontmatter.test.ts`.
 
 **Deferred (designed, not built):** live `fs.watch` updates (so terminal-driven runs also refresh the
 dashboard) and multi-session parallelization (a shared hub with leader election). The MVP's choices —
