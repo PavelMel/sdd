@@ -375,6 +375,25 @@ def main() -> int:
               f"{rel} documents judgment_model",
               f"{rel} never mentions 'judgment_model' — the settings doc and the roster policy must both carry it")
 
+    # --- artifact language: the key is defined + the rule is threaded through every writer ---
+    # The artifact_language settings key (en|uk prose switch for pipeline documents) is defined in
+    # the settings doc and its rule lives in _shared/artifact-language.md — if either drops the
+    # mention, the policy silently forks. And every artifact-writing skill must point at the shared
+    # rule; a dropped pointer means that skill's documents silently revert to always-English.
+    print("== artifact language ==")
+    for rel in ("skills/implement/references/settings.md", "skills/_shared/artifact-language.md"):
+        check("artifact_language" in (ROOT / rel).read_text(),
+              f"{rel} documents artifact_language",
+              f"{rel} never mentions 'artifact_language' — the settings doc and the shared rule must both carry it")
+    ARTIFACT_WRITERS = ("specify", "clarify", "glossary", "design", "decide-adr", "sequences",
+                        "data-model", "api", "tasks", "plan-tests", "review", "ship", "fix",
+                        "roadmap", "survey")
+    for name in ARTIFACT_WRITERS:
+        check("artifact-language.md" in (ROOT / "skills" / name / "SKILL.md").read_text(),
+              f"skills/{name}/SKILL.md points at _shared/artifact-language.md",
+              f"skills/{name}/SKILL.md never mentions 'artifact-language.md' — every artifact-writing "
+              f"skill must carry the language pointer")
+
     # --- the route table is single-source in _shared/size-matrix.md + `.route` is threaded ---
     # The Routes table (quick/standard/full handoff behaviour) lives ONLY in size-matrix.md;
     # and the `.route` artifact must be named by the files that write/consume it — a rename or
