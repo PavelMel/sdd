@@ -354,13 +354,17 @@ Short version: if a run feels under-reasoned, set `CLAUDE_CODE_EFFORT_LEVEL`.
 The pipeline **auto-creates** this per-project settings file (YAML frontmatter) with **documented
 defaults** the first time a skill needs it — normally `specify` at the start — and adds it to
 `.gitignore` (it's per-developer). The file is **self-documenting**: every key carries its default,
-its allowed values, and a one-line explanation inline. Edit it to change behaviour. One key is
+its allowed values, and a one-line explanation inline. Edit it to change behaviour. Two keys are
 **plugin-wide** — `interview_depth` is read by the Q&A skills (`specify` / `clarify` / `design`) to
-pre-select the depth dial; the rest configure
+pre-select the depth dial, and `artifact_language` is read by every artifact-writing skill: it sets
+the language pipeline documents are written in — prose only, while section headings, frontmatter and
+machine tokens stay English (full rule →
+[`skills/_shared/artifact-language.md`](./skills/_shared/artifact-language.md)); the rest configure
 the `implement` engine:
 
 ```yaml
 interview_depth: medium    # easy | medium | hard — default depth for specify/clarify/design
+artifact_language: en      # en | uk — the language pipeline documents are written in (headings + machine tokens stay English)
 tdd: true                  # enforce red→green→refactor
 team_mode: false           # true → agent team via TeamCreate
 workflow_mode: auto        # auto → dynamic Workflow; off → never
@@ -513,7 +517,9 @@ where every feature stands"* has shipped — and gained a control surface. The p
 session (declared in `.mcp.json`) and, when enabled, serves a **local browser dashboard** (`dashboard/`)
 on `127.0.0.1`. It reads every feature off disk (`docs/features/<slug>/`), shows its pipeline as a
 per-step checklist — `done` / `skipped` / `pending` / `blocked` — and renders each artifact (markdown +
-**mermaid** diagrams from vendored libs, fully offline; OpenAPI as plain YAML). Pure-markdown users who
+**mermaid** diagrams from vendored libs, fully offline; OpenAPI as plain YAML). Artifacts render in
+whatever language they're written — the state derivation reads only the English structural tokens,
+which never translate (see `artifact_language` above). Pure-markdown users who
 never opt in are unaffected — nothing binds, nothing opens.
 
 ### Launch it — three steps
