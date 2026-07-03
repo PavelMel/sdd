@@ -1,0 +1,14 @@
+/sdd:glossary rate-limit-bump
+
+Headless eval run — there is NO interactive user; never call AskUserQuestion. Capture BOTH domain
+terms below into the feature-scoped glossary for slug rate-limit-bump. Treat the definitions and
+NOT-references given here as the user's already-confirmed answers:
+
+1. term "quota window" — definition: the rolling 60-second interval a tenant's request budget is
+   counted in. NOT-reference: the billing period (the monthly invoice cycle) — a quota window is
+   seconds, not a calendar month.
+2. term "burst credit" — definition: a one-off allowance that lets a tenant briefly exceed its
+   quota-window limit without being throttled. NOT-reference: none.
+
+Note the project's settings file at .claude/sdd.local.md and honour every key that applies to this
+skill. Write the files and finish by printing the stage-handoff block.
