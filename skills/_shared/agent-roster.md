@@ -44,7 +44,7 @@ degrade-don't-block rule and the full mapping table: [`tool-adapters.md`](./tool
 env var  >  per-invocation (the Agent call)  >  model_<role>  >  judgment_model  >  frontmatter  >  session
 ```
 
-**`judgment_model`** (`.claude/sdd.local.md`; `opus | fable`, default `opus`) is the one-switch
+**`judgment_model`** (`.claude/sdd.local.md`; `opus | fable`, default `fable` in this fork) is the one-switch
 tier for the **judgment agents** — `reviewer` / `critic` / `devils-advocate` / `strategist` /
 `analyst`. Setting it to `fable` raises all five to the Mythos-tier model without touching
 `agents/*.md` (their frontmatter stays the tier-alias default); a per-role `model_<role>` key
