@@ -8,7 +8,7 @@ The 12 Arc42 sections of `sad.md`, in order:
 
 §1 Introduction & goals → §2 Constraints → §3 Context & scope (C4 Context inline) → §4 Solution strategy → §5 Building blocks (C4 Container inline) → §6 Runtime → §7 Deployment → §8 Crosscutting → §9 Architecture decisions → §10 Quality requirements → §11 Risks → §12 Glossary.
 
-§4 opens with the **Target-surface** decision (it gates §5's containers + every downstream stage, so it's resolved before any other §4 choice — see the decision-types catalog below). One bundled commit per section (`sad.md` edits + any ADR files the gate spawned). The skill never returns to a written section — cross-section drift is the critic's job. Section depth follows the size matrix; even XS/S walks all 12 (more `<!-- N/A: reason -->`, see [`../../_shared/size-matrix.md`](../../_shared/size-matrix.md)).
+§4 opens with the **Target-surface** decision (it gates §5's containers + every downstream stage, so it's resolved before any other §4 choice — see the decision-types catalog below). One bundled commit per section (`sad.md` edits + any ADR files the gate spawned) — except on route `quick` + depth `easy`, where sections are still written to disk as they resolve but commits batch (≤3 per pass, or one uninterrupted — spine step 6). The skill never returns to a written section — cross-section drift is the critic's job. Section depth follows the size matrix; even XS/S walks all 12 (more `<!-- N/A: reason -->`, see [`../../_shared/size-matrix.md`](../../_shared/size-matrix.md)).
 
 ## Decision-types catalog
 

@@ -1,7 +1,7 @@
 ---
 name: roadmap
 model: inherit
-effort: high
+effort: medium
 agents: []
 description: >
   Use to keep the portfolio layer above individual features — one living docs/roadmap.md of
@@ -19,6 +19,8 @@ description: >
 The **portfolio layer** above the per-feature pipeline. SDD builds one feature at a time under `docs/features/<slug>/`; `roadmap` is the single living view *across* features — what we're doing now, what's next, what's directional later — kept at **outcome altitude** (the "why"/problem), with each item linking to its feature folder rather than restating the spec.
 
 A roadmap is **direction, not a promise**, and **not a release plan**: feature-and-date roadmaps are the biggest source of waste — they project false certainty, go stale fastest the further out they reach, and commit to solutions before discovery. So this roadmap encodes *decreasing certainty over time* and never carries dates. Repo-level utility (like `survey`) — one file serves the whole repo. Question phrasing → [`../_shared/ask-style.md`](../_shared/ask-style.md).
+
+Item prose follows `artifact_language` — the `## Shipped` heading and the table structure stay English (the dashboard parses them) → [`../_shared/artifact-language.md`](../_shared/artifact-language.md).
 
 ## Owner
 
@@ -39,7 +41,9 @@ Whoever owns product direction (PM / lead / the solo maintainer). They decide wh
 3. **Capture a candidate** → add to **Next** (or Later) as an outcome/problem, RICE-scored. **Never** write a solution/feature spec here — that's `specify`'s job when the item is pulled into Now.
 4. **Prioritize (RICE).** For Next candidates, score `RICE = (Reach × Impact × Confidence) ÷ Effort` (Impact 3/2/1/0.5/0.25; Confidence 100/80/50%; Effort in person-weeks) → one sortable number; order Next by it descending. RICE is a guide, not a gate — the owner can override. → [`./templates/roadmap.md`](./templates/roadmap.md) shows the columns.
 5. **Promote / demote.** Move items between horizons as certainty changes. Promote Next→Now only when the item is about to be `specify`'d (committed). Demote freely; far-out items stay coarse.
-6. **Render / write + commit + handoff.** Update `docs/roadmap.md`, set `updated_at`, propose commit `roadmap: <what changed>`. Then **emit the stage-handoff block** per [`../_shared/handoff.md`](../_shared/handoff.md) (utility variant) — *What I did* + *Review* (`docs/roadmap.md`) + *Run next*: resume your backbone stage; `/clear` optional.
+6. **Render / write.** Update `docs/roadmap.md`, set `updated_at`.
+7. **Structural self-check** — per [`../_shared/self-check.md`](../_shared/self-check.md): re-read `docs/roadmap.md` from disk and verify **4 items**: (1) every Now/Shipped row links to an **existing** `docs/features/<slug>/` folder (`test -d` each); (2) every Next row carries a RICE score and Next is sorted by it descending; (3) **zero dates** anywhere outside Shipped's shipped-date column (regex-scan for `\b20\d\d-` style dates — the no-dates rule is the genre); (4) `updated_at` = today. Fix + re-check ≤2 cycles; surface anything unresolved.
+8. **Commit + handoff.** Propose commit `roadmap: <what changed>`. Then **emit the stage-handoff block** per [`../_shared/handoff.md`](../_shared/handoff.md) (utility variant) — *What I did* (incl. «self-check: 4/4 pass») + *Review* (`docs/roadmap.md`) + *Run next*: resume your backbone stage; `/clear` optional.
 
 ## Sync hooks (delivery keeps it current — anti-drift)
 

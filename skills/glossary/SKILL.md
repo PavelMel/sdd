@@ -9,12 +9,14 @@ description: >
   canonical definition plus a NOT-reference so a homonym can't bite you in six months.
   Triggers on "add term {X}", "what is {X} in our domain", "add to CONTEXT", "fix the
   glossary", "define {X}", "/sdd:glossary {term}", "додай термін", "онови глосарій",
-  "що означає {X}". Lazy-bootstraps docs/features/{slug}/CONTEXT.md (or repo-root
-  CONTEXT.md) from a template, checks for a conflicting existing entry, asks for a
-  one-sentence definition + the concept it's confused with, and appends one line to
-  ## Glossary. Skip generic tech words (HTTP, queue, cache) — those are not domain terms.
-  Output: created/edited CONTEXT.md. Runs anytime, no input gate; specify and design
-  read its ## Glossary as the canonical source of role and domain-term names.
+  "що означає {X}". Two-level contract: repo-root CONTEXT.md holds project-wide terms,
+  docs/features/{slug}/CONTEXT.md holds feature-scoped ones; readers read both and the
+  per-feature entry wins. Lazy-bootstraps the target from a template, checks BOTH levels
+  for a conflicting existing entry, asks for a one-sentence definition + the concept it's
+  confused with, and appends one line to ## Glossary. Skip generic tech words (HTTP, queue,
+  cache) — those are not domain terms. Output: created/edited CONTEXT.md. Runs anytime, no
+  input gate; specify, clarify, design and api read its ## Glossary as the canonical source
+  of role and domain-term names.
 ---
 
 # Skill: glossary
@@ -23,6 +25,8 @@ Lazy utility that fixes the meaning of a domain term in `CONTEXT.md` the moment 
 
 This is a capture utility, not a Socratic stage — it does **not** run the shared Socratic loop or critic. The one shared dependency is question phrasing:
 → [`../_shared/ask-style.md`](../_shared/ask-style.md)
+
+Term definitions follow `artifact_language` — the `## Glossary` heading and the other H2s stay English, the frontmatter stays the **template's** (`status: Living` + `updated_at:` — never write `artifact_language` or any other settings key into the file) → [`../_shared/artifact-language.md`](../_shared/artifact-language.md).
 
 ## Owner
 
@@ -38,19 +42,20 @@ Whoever drives the conversation — anyone who spots ambiguity. Tech Lead approv
 
 ## Protocol
 
-1. **Pick the target.** If `<slug>` is given → `docs/features/<slug>/CONTEXT.md`. Otherwise → repo-root `CONTEXT.md`. One glossary per file; don't split a term across both.
+1. **Pick the target (the two-level contract).** Root `CONTEXT.md` = **project-wide** terms (meaningful across features); `docs/features/<slug>/CONTEXT.md` = **feature-scoped** terms (meaningful only inside that feature). If `<slug>` is given → the per-feature file; otherwise → repo-root. A term lives in exactly **one** of the two files — never split or duplicate it across levels. Readers (`specify`, `clarify`, `design`, `api`) read **both** files; on a conflict the per-feature entry wins.
 2. **Generic-term filter.** Reject words that name infrastructure or transport rather than the business domain (e.g. HTTP, queue, cache, the datastore, the broker, a framework). Refuse: «`<term>` is technical, not a domain word — its choice belongs in the SAD or an ADR, not the glossary». Continue only for genuine domain vocabulary.
 3. **Bootstrap (lazy).** `test -f <target>`. Missing → copy [`./templates/CONTEXT.md`](./templates/CONTEXT.md) to `<target>`. Present → read it.
-4. **Conflict check.** `grep -i "^- <term>" <target>`.
-   - Found, identical sense → STOP, report «already in the glossary».
-   - Found, different sense → escalate via `AskUserQuestion` (phrasing per [`../_shared/ask-style.md`](../_shared/ask-style.md)): «`<term>` is already defined as `<existing>` — same concept or a different one?». If different, propose a disambiguating pair of names (e.g. a billing-scoped vs a runtime-scoped variant) and fix both.
-   - Not found → continue.
+4. **Conflict check — both levels.** `grep -i "^- <term>" <target>` AND the other level's file when it exists (root `CONTEXT.md` ↔ `docs/features/<slug>/CONTEXT.md`).
+   - Found (either level), identical sense → STOP, report «already in the glossary» + which file holds it — never duplicate a term across levels.
+   - Found (either level), different sense → escalate via `AskUserQuestion` (phrasing per [`../_shared/ask-style.md`](../_shared/ask-style.md)): «`<term>` is already defined as `<existing>` in `<file>` — same concept or a different one?». If different: a genuinely feature-scoped narrowing goes to the per-feature file (readers let it win there); otherwise propose a disambiguating pair of names (e.g. a billing-scoped vs a runtime-scoped variant) and fix both.
+   - Not found in either → continue.
 5. **Ask the canonical definition** — one `AskUserQuestion`: «Define `<term>` in this domain, in one sentence». Offer interview/brainstorm phrasings as options when available; otherwise free text.
 6. **Ask the NOT-reference** — one `AskUserQuestion`: «Which concept does `<term>` get confused with, so a future reader doesn't mix them up?». No plausible homonym → `None`.
 7. **Compose one line.** `- <term> — <one-sentence definition>. NOT <confused concept + how it differs>.` — or, when step 6 = None, `- <term> — <definition>.`
 8. **Append under `## Glossary`.** Read the file, insert the line in `## Glossary` (alphabetical if the section is already sorted, else at the end). Never rewrite existing entries.
 9. **Prune empty H2s.** On a fresh bootstrap, delete `## Invariants` / `## Out of scope` if they hold no real content — only `## Glossary` is mandatory. (A genuine invariant or out-of-scope note goes in its section, never as implementation detail.)
-10. **Stamp + commit + handoff.** Set `updated_at: <today>` in the frontmatter. Propose `context: + <term>` (or `context: + <term>, <term2>` for a batch). May fold into the caller's intake/spec commit. Then **emit the stage-handoff block** per [`../_shared/handoff.md`](../_shared/handoff.md) (utility variant) — *What I did* + *Review* (`CONTEXT.md`) + *Run next*: resume your backbone stage (e.g. `/sdd:design <slug>`); `/clear` optional.
+10. **Structural self-check** — per [`../_shared/self-check.md`](../_shared/self-check.md): re-read the target file(s) from disk and verify **3 items**: (1) the term appears **exactly once across both levels combined** (grep root `CONTEXT.md` + `docs/features/<slug>/CONTEXT.md` — no duplicate, no split); (2) the entry matches the format `- <term> — <definition>.` (with the optional `NOT …` tail); (3) no empty H2 sections remain. Fix + re-check ≤2 cycles; surface anything unresolved.
+11. **Stamp + commit + handoff.** Set `updated_at: <today>` in the frontmatter. Propose `context: + <term>` (or `context: + <term>, <term2>` for a batch). May fold into the caller's intake/spec commit. Then **emit the stage-handoff block** per [`../_shared/handoff.md`](../_shared/handoff.md) (utility variant) — *What I did* (incl. «self-check: 3/3 pass») + *Review* (`CONTEXT.md`) + *Run next*: resume your backbone stage (e.g. `/sdd:design <slug>`); `/clear` optional.
 
 ## Definition of Done
 

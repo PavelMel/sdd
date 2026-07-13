@@ -39,7 +39,7 @@ for (const layer of kahnLayers(TASKS)) {              // computed from deps
 
 ## Serialization inside the workflow
 
-The same lanes as the team apply: `layer: migration` tasks are forced into a single ordered sub-sequence (don't place two migrations in the same parallel layer — chain them via synthetic deps before computing Kahn layers), and tasks with overlapping `files_hint` get a synthetic dep so they never land in the same parallel batch. Each migration task **promotes** its staged `docs/features/<slug>/migrations/<NN>_*` file into the live `migrations/` (next free number, in ordinal order) before applying it — see [`./inputs.md`](./inputs.md).
+The same lanes as the team apply: `layer: migration` tasks are forced into a single ordered sub-sequence (don't place two migrations in the same parallel layer — chain them via synthetic deps before computing Kahn layers), and tasks with overlapping `files_hint` get a synthetic dep so they never land in the same parallel batch. A **compile-coupled pair** (shared contract file in `files_hint`) gets the same synthetic dep AND its commit step is merged — one shared gate, one commit with every task's `SDD-Task`/`SDD-AC` trailers ([`tdd-loop.md`](./tdd-loop.md) §COMMIT). Each migration task **promotes** its staged `docs/features/<slug>/migrations/<NN>_*` file into the live `migrations/` (next free number, in ordinal order) before applying it — see [`./inputs.md`](./inputs.md).
 
 ## Commit + integration
 

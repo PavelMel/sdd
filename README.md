@@ -1,7 +1,7 @@
 # SDD — Spec-Driven Development for Claude Code
 
 A self-contained Claude Code plugin that carries a feature from a one-line idea to
-**reviewed, verified, shipped** code through **17 atomic, stack-agnostic skills** and a
+**reviewed, verified, shipped** code through **19 atomic, stack-agnostic skills** and a
 **TDD implementation engine** — with a living roadmap above the per-feature flow.
 
 Every skill is Socratic (it walks decisions with you, it doesn't dump a wall of output),
@@ -120,6 +120,7 @@ after the code is written.
 
 ```mermaid
 flowchart LR
+    IV[interview<br/>optional] -.-> S
     SV[survey<br/>once per repo] --> S
     subgraph backbone["BACKBONE — run in order"]
         S[specify] --> CL[clarify] --> D[design] --> SQ[sequences] --> DM[data-model] --> API[api] --> T[tasks] --> PT[plan-tests] --> IM[implement]
@@ -131,6 +132,7 @@ flowchart LR
         ADR[decide-adr]
         FX[fix]
     end
+    CL -.-> GL -.-> D
     SH --> done([shipped: PR + changelog])
 ```
 
@@ -146,10 +148,10 @@ flowchart LR
 |---|---|---|---|
 | 1 | **specify** | Interviews you to capture the idea, writes the product spec + acceptance criteria (reads the architecture map for constraints) | *your idea*, `architecture-map.md` → `spec.md` |
 | 2 | **clarify** | Sweeps the spec for ambiguities (a devil's-advocate pass), closes or defers each | `spec.md` → tightened `spec.md` |
-| 3 | **design** | **Matches the feature to your existing architecture** (see below) + **declares the target surfaces**, writes the Arc42 SAD + C4 + ADRs | `spec.md`, `CONTEXT.md` → `sad.md`, `adr/*` |
+| 3 | **design** | **Matches the feature to your existing architecture** (see below) + **declares the target surfaces**, writes the Arc42 SAD + C4 + ADRs | `spec.md` (+ `CONTEXT.md` if present) → `sad.md`, `adr/*` |
 | 4 | **sequences** | Draws the runtime flows as Mermaid sequence diagrams | `sad.md` → `sad.md §6` |
 | 5 | **data-model** | Designs the schema and writes the actual forward+rollback migrations — **staged** under the feature folder, not the live tree (`implement` promotes them) | `spec.md`, `sad.md`, sequences → `data-model.md`, staged `migrations/*.up/down.sql` |
-| 6 | **api** | Derives the OpenAPI contract from the data model + sequences + spec | `data-model.md`, sequences, `spec.md` → `contracts/openapi.yaml` |
+| 6 | **api** | Derives the OpenAPI contract from the data model (or the existing schema on the fast lane) + sequences + spec | `data-model.md`, sequences, `spec.md` → `contracts/openapi.yaml` |
 | 7 | **tasks** | Breaks the work into atomic ≤1-day tasks + a `tasks.json` dependency DAG | all of the above → `tasks/*`, **`tasks.json`** |
 | 8 | **plan-tests** | Maps every acceptance criterion to ≥1 test (inline in the spec for XS/S) | `spec.md`, `data-model.md` → `test-plan.md` (M+) or an inline `## Test plan` in `spec.md` (XS/S) |
 | 9 | **implement** | The TDD engine: writes a failing test, makes it pass, gates, commits — per task; **promotes** each staged migration into the live `migrations/` as it builds | `tasks.json` + all artifacts → code + tests + promoted migrations, committed |
@@ -173,6 +175,7 @@ end: a reviewed, verified change with a changelog and an open PR — merging to 
 
 ### Utilities — call whenever you need them (not part of the line)
 
+- **interview** *(before specify)* — stress-test a raw idea before you commit to a spec: a Socratic pass that surfaces hidden assumptions, names tradeoffs, and proposes sharper angles, ending with the weakest spot + the next step (usually `/sdd:specify`). Any idea, not just features; optional — reach for it when the idea itself isn't settled.
 - **classify-size** — size the feature XS/S/M/L/XL (writes `.size`); later skills read it to decide MVP vs full depth. Run it at the start, or any time scope changes.
 - **glossary** — capture a domain term in `CONTEXT.md` with a definition. Run it whenever a new term shows up; `design` and the spec read the glossary.
 - **decide-adr** — write a standalone ADR after the fact, when `tasks` (or a review) flags a decision that needs recording but wasn't captured during `design`.
@@ -312,8 +315,8 @@ how much reasoning effort, and which agents it spawns:
 
 ```yaml
 # a skill's frontmatter
-model: opus        # haiku | sonnet | opus | inherit
-effort: xhigh      # low | medium | high | xhigh | max
+model: opus        # haiku | sonnet | opus | fable | inherit (fable — reachable via judgment_model / env, agents keep tier-alias defaults)
+effort: xhigh      # low | medium | high | xhigh | max — opus/judgment runs xhigh; inherit/execution runs medium
 agents: [critic]   # the agents this skill spawns
 ```
 
@@ -322,9 +325,9 @@ Model is chosen by the **kind of work**, not by taste:
 | Kind of work | Model | Effort | Who |
 |---|---|---|---|
 | Judgment (spec, design, review, critique, ambiguity, strategy) | `opus` | `xhigh` | specify, clarify, design, review · `reviewer` / `critic` / `devils-advocate` / `strategist` / `analyst` |
-| Execution (write tests, write code) | `sonnet` | `high` → `xhigh` on escalation | `test-author`, `implementer` |
-| Research / gathering (+ web) | `sonnet` | `high` | `researcher` (competitive / adjacent-solution research) |
-| Search / scan · derivation | `haiku` · `inherit` | `low` · `high` | `explorer` (scan) · data-model, api, sequences, tasks (derivation) |
+| Execution (write tests, write code) | `sonnet` | `medium` → `high` on escalation | `test-author`, `implementer` |
+| Research / gathering (+ web) | `sonnet` | `medium` | `researcher` (competitive / adjacent-solution research) |
+| Search / scan · derivation | `haiku` · `inherit` | `low` · `medium` | `explorer` (scan) · data-model, api, sequences, tasks (derivation) |
 
 The nine agents (`agents/`): **explorer** (brownfield scan), **test-author** (failing tests),
 **implementer** (makes them pass), **reviewer** (independent review), **critic**
@@ -334,8 +337,18 @@ The nine agents (`agents/`): **explorer** (brownfield scan), **test-author** (fa
 emit only cited findings. The last three are the **ideation analyses**, dispatched by `specify` and
 gated by the depth dial (easy skips them; hard runs the full suite).
 
-The full policy — override precedence, the `.size` scaling, and the env-var fallback for the
-`effort:` no-op some builds have — lives in one place: [`skills/_shared/agent-roster.md`](./skills/_shared/agent-roster.md).
+Two policy levers sit on top of the table. **`judgment_model`** (`.claude/sdd.local.md`;
+`opus | fable`) raises **all** judgment agents (`reviewer` / `critic` / `devils-advocate` /
+`strategist` / `analyst`) to the Mythos-tier model in one switch — `agents/*.md` keep their
+tier-alias defaults; a per-role `model_<role>` key still wins. And **this fork raises the judgment
+floor**: all five judgment agents run at **`effort: xhigh`** at *every* feature size — not just the
+`reviewer`/`critic` on L/XL, as upstream does — so the reasoning-heavy stages are always at the
+ceiling. Execution keeps the cheaper `medium` baseline and escalates to `high` on L/XL (via
+`CLAUDE_CODE_EFFORT_LEVEL`).
+
+The full policy — override precedence (`env > invocation > model_<role> > judgment_model >
+frontmatter > session`), the `.size` scaling, and the env-var fallback for the `effort:` no-op
+some builds have — lives in one place: [`skills/_shared/agent-roster.md`](./skills/_shared/agent-roster.md).
 Short version: if a run feels under-reasoned, set `CLAUDE_CODE_EFFORT_LEVEL`.
 
 ### Configuration — `.claude/sdd.local.md`
@@ -343,13 +356,17 @@ Short version: if a run feels under-reasoned, set `CLAUDE_CODE_EFFORT_LEVEL`.
 The pipeline **auto-creates** this per-project settings file (YAML frontmatter) with **documented
 defaults** the first time a skill needs it — normally `specify` at the start — and adds it to
 `.gitignore` (it's per-developer). The file is **self-documenting**: every key carries its default,
-its allowed values, and a one-line explanation inline. Edit it to change behaviour. One key is
+its allowed values, and a one-line explanation inline. Edit it to change behaviour. Two keys are
 **plugin-wide** — `interview_depth` is read by the Q&A skills (`specify` / `clarify` / `design`) to
-pre-select the depth dial; the rest configure
+pre-select the depth dial, and `artifact_language` is read by every artifact-writing skill: it sets
+the language pipeline documents are written in — prose only, while section headings, frontmatter and
+machine tokens stay English (full rule →
+[`skills/_shared/artifact-language.md`](./skills/_shared/artifact-language.md)); the rest configure
 the `implement` engine:
 
 ```yaml
 interview_depth: medium    # easy | medium | hard — default depth for specify/clarify/design
+artifact_language: en      # en | uk — the language pipeline documents are written in (headings + machine tokens stay English)
 tdd: true                  # enforce red→green→refactor
 team_mode: false           # true → agent team via TeamCreate
 workflow_mode: auto        # auto → dynamic Workflow; off → never
@@ -369,9 +386,10 @@ cmd_vet: ""
 model_test_author: sonnet  # per-role model + effort (see Models, effort & agents)
 model_implementer: sonnet
 model_reviewer: opus
-effort_test_author: high   # raised to xhigh on escalation (once on Opus) / for L-XL features
-effort_implementer: high
-effort_reviewer: xhigh
+judgment_model: opus       # opus | fable — one switch for all judgment agents (reviewer/critic/devils-advocate/strategist/analyst)
+effort_test_author: medium # raised to high on escalation / for L-XL features
+effort_implementer: medium
+effort_reviewer: xhigh     # judgment agents run xhigh at every size
 ```
 
 Command detection is a stack-agnostic cascade: settings override → Makefile targets →
@@ -414,20 +432,30 @@ Three notes on the first run:
   [Interview depth](#interview-depth-easy--medium--hard)).
 - Artifacts land in `docs/features/<slug>/`.
 
-### Fast path (XS)
+### Routes — quick / standard / full
 
-A small feature doesn't need the full backbone. For XS/S the optional stages are skipped **when
-their work doesn't exist** — and the decision is made for you at each handoff: the stage's *Run
-next* shows the skip as a `↳ or …` alternative (based on `.size` + the stage's N/A condition),
-and you pick it. Example — a config-toggle-sized feature in one session:
+A small feature doesn't need the full backbone — and it shouldn't need a confirmation at every
+stage either. Alongside `.size`, classification writes a **route** to
+`docs/features/<slug>/.route` (one word: `quick` / `standard` / `full`; defaults **XS/S → quick,
+M → standard, L/XL → full**, confirmed together with the size in the **same single question** —
+you can always pick a different route). The route decides how each handoff treats the optional
+stages (`clarify`, `sequences`, `data-model`, `api`, `plan-tests`):
+
+- **`quick`** — the stage checks the skip condition **itself**: if the stage's work doesn't exist,
+  it's **auto-skipped with the reason stated** («auto-skipped clarify: zero open questions»), and
+  the `↳ or …` line inverts to offer the full path instead. If the work *does* exist, the stage runs.
+- **`standard`** — today's behaviour: the handoff **offers** the skip as `↳ or …` and you pick.
+- **`full`** — every optional stage runs; no skip alternatives are printed.
+
+Example — a config-toggle-sized feature (`quick` route) in one session:
 
 ```text
-/sdd:specify  rate-limit-bump --depth=easy   # spec came out with zero open questions →
-                                             #   handoff offers: ↳ or /sdd:design (skip clarify)
+/sdd:specify  rate-limit-bump --depth=easy   # size XS + route quick confirmed in one question →
+                                             #   zero open questions → auto-skips clarify (says why)
 /sdd:design   rate-limit-bump                # one actor, no multi-step flow, no schema change →
-                                             #   handoff offers: ↳ or /sdd:api — or straight to tasks
+                                             #   auto-skips sequences + data-model → next: api or tasks
 /sdd:tasks    rate-limit-bump                # never skipped: implement consumes tasks.json
-/sdd:implement rate-limit-bump               # test plan lives inline in spec.md for XS/S
+/sdd:implement rate-limit-bump               # test plan lives inline in spec.md on quick
 /sdd:review   rate-limit-bump
 /sdd:ship     rate-limit-bump
 ```
@@ -435,7 +463,10 @@ and you pick it. Example — a config-toggle-sized feature in one session:
 The skip conditions (`clarify` — zero open questions; `sequences` — no multi-step flow;
 `data-model` — no schema change; `api` — no contract change; `plan-tests` — inline in the spec)
 are canonical in [`skills/_shared/size-matrix.md`](./skills/_shared/size-matrix.md) — they're
-**N/A conditions, not size defaults**: an XS feature *with* a migration still runs `data-model`.
+**N/A conditions, not size defaults**: an XS feature *with* a migration still runs `data-model`,
+on every route. The route steers handoffs only, it never locks a door: re-run
+`/sdd:classify-size <slug>` to switch routes mid-flight, or just invoke a skipped stage directly —
+it always runs.
 
 ### When a stage refuses
 
@@ -445,8 +476,8 @@ skipped. The ones you're most likely to meet:
 
 | Refusal | What it means | What to do |
 |---|---|---|
-| `design`: «run `specify` / `glossary` first» | there's no `spec.md` or `CONTEXT.md` for this slug yet (or the slug is spelled differently) | run `/sdd:specify <slug>`; check the slug matches the folder under `docs/features/` |
-| `api`: «run `data-model` first» | the contract is derived from the data model's entities — it can't be invented field-by-field | run `/sdd:data-model <slug>` |
+| `design`: «run `specify` first» | there's no `spec.md` for this slug yet (or the slug is spelled differently) | run `/sdd:specify <slug>`; check the slug matches the folder under `docs/features/` |
+| `api`: «run `data-model` first» | the feature **changes the schema** but has no `data-model.md` — the contract can't be invented field-by-field. (No schema change → `api` doesn't refuse: it derives from the existing schema — the legal fast-lane skip) | run `/sdd:data-model <slug>` |
 | `tasks`: «no Accepted ADR» | `design` spawned no ADR (rare — usually a sign the SAD walk was cut short) | run `/sdd:decide-adr <slug>` for the key decision, or re-run `/sdd:design <slug>` |
 
 ## Repository layout
@@ -461,8 +492,8 @@ scripts/          validate_plugin.py (CI gate: manifests + skill/agent frontmatt
 skills/_shared/   canonical socratic-loop / critic / size-matrix / ask-style / interview-depth / diagram-presentation / surfaces / handoff / tool-adapters (referenced, not duplicated)
 skills/<name>/    SKILL.md spine + references/ (heavy detail) + templates/ (output scaffolds)
 .mcp.json         declares the sdd-dashboard MCP server (auto-starts at session open; opt-in via dashboard_enabled)
-server/           the dashboard MCP server (Bun + TypeScript): server.ts (MCP stdio + Bun.serve HTTP/WS), state.ts (disk→pipeline derivation), channel.ts (dashboard_* tools + command allowlist), paths.ts (docs/ scoping)
-dashboard/        the browser UI (vanilla JS, terminal-green): index.html + app.js + style.css + vendor/ (marked, mermaid, redoc — vendored, offline)
+server/           the dashboard MCP server (Bun + TypeScript): server.ts (MCP stdio + Bun.serve HTTP/WS), http.ts (routing + gating, testable), state.ts (disk→pipeline derivation), channel.ts (dashboard_* tools + command allowlist), paths.ts (docs/ scoping), frontmatter.ts (shared parser) + tests/ (bun test)
+dashboard/        the browser UI (vanilla JS, terminal-green, read-only): index.html + app.js + style.css + vendor/ (marked, mermaid — vendored, offline; mermaid lazy-loads)
 ```
 
 ## Roadmap
@@ -483,34 +514,78 @@ Directions under consideration — not promises, no dates:
 ## The visual dashboard (opt-in)
 
 The roadmap's *"MCP exposure — pipeline state served over MCP so external tools and dashboards can read
-where every feature stands"* has shipped — and gained a control surface. The plugin now carries an
-**`sdd-dashboard` MCP server** (`server/`, Bun + TypeScript) that auto-starts at session open and, when
-enabled, serves a **local browser dashboard** (`dashboard/`) on `127.0.0.1`. It:
+where every feature stands"* has shipped — and gained a control surface. The plugin carries an
+**`sdd-dashboard` MCP server** (`server/`, Bun + TypeScript) that auto-starts with every Claude Code
+session (declared in `.mcp.json`) and, when enabled, serves a **local browser dashboard** (`dashboard/`)
+on `127.0.0.1`. It reads every feature off disk (`docs/features/<slug>/`), shows its pipeline as a
+per-step checklist — `done` / `skipped` / `pending` / `blocked` — and renders each artifact (markdown +
+**mermaid** diagrams from vendored libs, fully offline; OpenAPI as plain YAML). Artifacts render in
+whatever language they're written — the state derivation reads only the English structural tokens,
+which never translate (see `artifact_language` above). Pure-markdown users who
+never opt in are unaffected — nothing binds, nothing opens.
 
-- **Reads** every feature off disk (`docs/features/<slug>/`) and shows its pipeline as a per-step
-  checklist — `done` / `skipped` / `pending` / `blocked` — derived from the artifacts present (so an XS
-  feature shows *skipped* stages, not gaps). It renders each artifact: markdown, **mermaid** C4 / sequence
-  / ER diagrams, and **OpenAPI** (redoc) — all from **vendored** libs (offline, no CDN).
-- **Edits** artifact text back to disk — scoped to `docs/`, atomic `tmp+rename`, with optimistic-concurrency
-  `409` on a stale edit.
-- **Drives the pipeline** — clicking *Run next stage* / *Create feature* sends a validated
-  `/sdd:<skill> <slug>` command **back into this live session** over the same channel mechanism the official
-  Telegram plugin uses (`notifications/claude/channel`). Claude runs the skill and streams progress + the
-  handoff back to the browser. The dashboard is a **driver + observer**, not a synchronous remote: a click
-  is consumed only while the session is idle at the prompt — otherwise it **queues** (shown honestly in the UI).
+### Launch it — three steps
 
-**Opt-in, two prerequisites.** It does nothing unless you ask for it:
+1. Install **[Bun](https://bun.sh)** (the server runtime — the same dependency the official Telegram
+   plugin uses): `curl -fsSL https://bun.sh/install | bash` or `brew install bun`.
+2. Set `dashboard_enabled: true` in your project's `.claude/sdd.local.md`
+   (see [Configuration](#configuration--claudesddlocalmd)).
+3. Run **`/sdd:start`** in your Claude Code session. The server is already running — it auto-started
+   with the session; this step just hands it your project directory, binds the port if needed, and
+   prints the URL: `http://127.0.0.1:<port>/?session=<id>&token=<capability-token>`. Open that exact
+   URL in a browser — the token in it authorises the session.
 
-1. Install **[Bun](https://bun.sh)** (the server runtime — the same dependency the Telegram plugin uses).
-2. Set `dashboard_enabled: true` in `.claude/sdd.local.md` (see [Configuration](#configuration--claudesddlocalmd)).
-3. Run **`/sdd:start`** — it hands the server your project dir, confirms the channel, and prints the URL
-   (`http://127.0.0.1:<port>/?session=<id>&token=<cap>`). Pure-markdown users who skip this are unaffected.
+A new session (or a server restart) mints a new token, so an old tab goes stale: re-run `/sdd:start`
+and open the fresh URL.
 
-**Setup, usage, config & troubleshooting:** [`server/README.md`](./server/README.md).
+### How the panel updates
 
-**Security:** binds loopback only; reads/writes are realpath-contained to `docs/` with an extension
-allowlist; mutating routes require a per-session capability token; inbound commands are built **only** from
-a server-side skill + slug allowlist (browser text never becomes an arbitrary `/sdd:` command).
+Three mechanisms, layered:
+
+1. **Live, from disk.** The server watches `docs/` (`fs.watch`) and pushes a refresh over the
+   WebSocket whenever an artifact changes — no matter who changed it: a dashboard-driven run, a skill
+   you ran in the terminal, or you editing `spec.md` in vim. Changes appear within ~1 second.
+2. **Enriched, from Claude.** When Claude runs a stage it also calls `dashboard_update` /
+   `dashboard_log` / `dashboard_done` — that is what feeds the live activity feed, stage transitions,
+   review verdicts and the final handoff. A terminal-only run still refreshes the artifacts
+   (mechanism 1); it just doesn't narrate.
+3. **Self-healing connection.** The server pings the WebSocket to keep it alive; if it drops anyway,
+   the browser reconnects with backoff and re-syncs everything from disk — nothing stays stale.
+
+### How you control it
+
+The **▶ Run next stage** / per-stage **run** / **⚒ Fix** (appears on a CHANGES REQUESTED review) /
+**+ new** buttons drive your live session — with honest **asynchronous** semantics:
+
+- A click sends the request to the server, which builds a validated `/sdd:<skill> <slug>` command from
+  a strict server-side allowlist and **queues** it into your Claude session — over the same channel
+  mechanism the official Telegram plugin uses (`notifications/claude/channel`).
+- The session consumes a queued command **only while idle at the prompt**. If Claude is mid-task, the
+  command waits; every queued command gets its own `queued → running → done` status line and the UI
+  never fakes synchronous execution.
+- The **depth selector** (topbar) sets `--depth` for dashboard-driven runs: `easy` (default — skills
+  self-decide reversible calls and rarely block on questions), `medium`, or `hard`.
+- If a dashboard-driven run genuinely needs a human decision, Claude posts the question **into the
+  panel** (`dashboard_ask`): a card with 2–4 option buttons appears in the activity pane and the run
+  pauses; your click sends the answer back through the same queue and the run resumes. The browser
+  only ever sends an option *index* — the option text was authored by Claude itself. You can always
+  answer in the terminal instead.
+- Free browser text can never become a command — only the validated skill name + slug + depth pass
+  the allowlist.
+
+### What the panel does NOT do
+
+- It never writes to disk — artifacts are edited only by the pipeline in your terminal.
+- It has no chat input, and a blocking `AskUserQuestion` in the **terminal** stays terminal-only —
+  the panel's option cards exist precisely so dashboard-driven runs don't block there, but free text
+  never travels from the browser into the session.
+- It doesn't survive a server restart — re-run `/sdd:start` for a fresh URL/token.
+
+**Setup, config & troubleshooting:** [`server/README.md`](./server/README.md).
+
+**Security:** binds loopback only; the API is read-only and every read is realpath-contained to `docs/`
+with an extension allowlist; all routes require a per-session capability token; inbound commands are built
+**only** from a server-side skill + slug allowlist (browser text never becomes an arbitrary `/sdd:` command).
 
 ## License
 

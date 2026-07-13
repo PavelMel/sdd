@@ -43,6 +43,7 @@ If a question reads like a config dump or a spec excerpt, it's wrong. Write it a
 
 - **Ukrainian throughout** — labels + descriptions. Technical identifiers stay in their original form (ADR, JSONB, JWT, UUID, FK, OpenAPI) — they are names. The *actions* are Ukrainian («Прийняти», «Відредагувати», «Винести у §11 OQ», «Видалити»).
 - Glossary roles and domain-invariant **names** (natural-language phrases like «no published lessons») are allowed — they are business terms.
+- This section governs **conversation** (question + option text) only. The language documents are *written in* is a separate per-project switch — `artifact_language` in `.claude/sdd.local.md` → [`artifact-language.md`](./artifact-language.md).
 
 ## Forbidden
 

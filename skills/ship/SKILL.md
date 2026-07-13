@@ -1,7 +1,7 @@
 ---
 name: ship
 model: inherit
-effort: high
+effort: medium
 agents: []
 description: >
   Use to close the loop after review — verify the feature actually works, write the changelog /
@@ -17,6 +17,8 @@ description: >
 The closing step. `review` confirmed the change is correct on paper; `ship` confirms it **works in reality** and packages it for merge. The loop ends here: a reviewed, verified change with a changelog and an open PR — not a merge to main (that stays a human decision).
 
 Forge-agnostic and stack-agnostic: the verification commands are detected the way `implement` detects them; the PR step targets whatever forge the remote points at (GitHub via `gh`, GitLab via `glab`, or copy-paste).
+
+Changelog + PR-body prose follow `artifact_language` — commit messages, branch names and the `SDD-Task`/`SDD-AC` trailers stay English → [`../_shared/artifact-language.md`](../_shared/artifact-language.md).
 
 ## Owner
 
@@ -42,6 +44,7 @@ The implementer (drives) + the reviewer who signed off in `review`.
 - The gate was re-run and the feature was exercised against its AC (or the deferral was stated explicitly with the reason).
 - A changelog / KB note exists, linking spec + ADRs.
 - A PR body is prepared and the forge-appropriate PR command proposed (work on a feature branch; main untouched).
+- The run-the-feature verification (real run against the ACs, not just green tests) is this skill's **structural self-check** ([`../_shared/self-check.md`](../_shared/self-check.md)); its result is reported in the handoff.
 
 ## Anti-patterns
 

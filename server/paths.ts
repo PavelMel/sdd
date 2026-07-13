@@ -114,8 +114,8 @@ export function isValidSlug(slug: string): boolean {
  * an allowed extension, and is not under .git. Returns the absolute path to use.
  *
  * Containment is checked on the realpath so a symlink escaping docs/ is caught.
- * For a not-yet-existing file (a fresh write) we realpath the PARENT dir and join
- * the leaf — the parent must already be contained.
+ * The API is read-only, so the artifact must already exist — a missing file is
+ * `no such artifact`, never a write anchor.
  */
 export function assertArtifactPath(slug: string | null, relPath: string): string {
   const docs = docsDir()
@@ -150,14 +150,10 @@ export function assertArtifactPath(slug: string | null, relPath: string): string
   } catch {
     throw new Error(`docs/ does not exist under the project: ${docs}`)
   }
-  let realTarget: string
-  if (existsSync(target)) {
-    realTarget = realpathSync(target)
-  } else {
-    const parent = dirname(target)
-    if (!existsSync(parent)) throw new Error(`no such directory: ${parent}`)
-    realTarget = join(realpathSync(parent), name)
+  if (!existsSync(target)) {
+    throw new Error(`no such artifact: ${relPath}`)
   }
+  const realTarget = realpathSync(target)
 
   if (realTarget !== realDocs && !realTarget.startsWith(realDocs + sep)) {
     throw new Error(`path escapes docs/: ${relPath}`)

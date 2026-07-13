@@ -27,4 +27,6 @@ Reuse the clean-context discipline from [`../../_shared/critic.md`](../../_share
 - **[stage-N] <headline>** — file:line; AC: <id|n/a>; problem: <what>; suggested: <fix>.
 ```
 
+On an async host (background/teammate mode), append the report-delivery instruction ([`../../_shared/agent-roster.md`](../../_shared/agent-roster.md), shared-contract point 2) to the dispatch prompt; an idle signal without the report is not a verdict — pull the report via messaging before merging findings.
+
 A clean review returns `REVIEW_CLEAN: <scope>`. Drop any finding without a `file:line` + a concrete reason — it isn't actionable. Prioritise correctness and AC-compliance over style; judge against the artifacts, not personal taste (if the spec says hide-existence, a 404-style response is correct, not a bug).

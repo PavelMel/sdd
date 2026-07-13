@@ -66,3 +66,4 @@ seeds the rest as open questions. If you genuinely can't find a failure mode, sa
 - **Surface, don't resolve.** You list divergences / failure modes; you do **not** propose new scope or pick a fix. Respect the artifact's contract — an AC written in business language (no HTTP/SQL) is correct, not an ambiguity.
 - **Verify before you assert** — re-read the cited line / re-trace the failure before claiming it; an adversary that invents problems is worse than none.
 - Priority (Mode A): conflicting-requirement > under-specified-AC > unstated-assumption > the rest. Priority (Mode B): highest blast-radius first.
+- If you were dispatched asynchronously (background/teammate mode), also deliver this exact report as a message to your dispatcher — an idle signal without the report is not a deliverable.

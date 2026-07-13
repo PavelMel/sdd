@@ -15,15 +15,20 @@ Written to `docs/features/<slug>/contracts/api-sync-report.md` next to the YAML.
 One row per `(operation, schema_field)` pair, so every field in the contract is traceable:
 
 ```
-| schema_path                | origin                                  | confidence |
-|----------------------------|-----------------------------------------|------------|
-| createLesson.title         | data-model.md → lesson.title (≤200)     | high       |
-| createLesson.module_id     | data-model.md → lesson.module_id (FK)   | high       |
-| listLessons.next_cursor    | derived (cursor wrapper convention)     | high       |
-| publishLesson.published_at | inferred from spec §5 AC-4, no column   | low        |
+| schema_path                | origin                                        | confidence |
+|----------------------------|-----------------------------------------------|------------|
+| createLesson.title         | data-model.md → lesson.title (≤200)           | high       |
+| createLesson.module_id     | data-model.md → lesson.module_id (FK)         | high       |
+| deleteFeedback.id          | existing schema — 000012_create_feedback.up   | high       |
+| listLessons.next_cursor    | derived (cursor wrapper convention)           | high       |
+| publishLesson.published_at | inferred from spec §5 AC-4, no column         | low        |
 ```
 
 - **high** — field maps to a `data-model.md` column with a matching type/constraint.
+- On a **legal fast-lane skip** (no `data-model.md`, no schema change — SKILL.md step 1), the
+  origin is **`existing schema — <migration/DDL anchor>`**: the live migration file (or DDL
+  statement) that defines the column. Same confidence scale — a column with a matching
+  type/constraint in the live DDL is `high`.
 - **medium** — field derived from a spec field name with no column yet (e.g. a computed/response-only field).
 - **low** — field inferred from a sequence message name only; flag it for confirmation.
 
@@ -35,8 +40,10 @@ will tighten when the model gains that column. Never hide it.
 Each point is ✓ or ✗ with a one-line diagnostic on ✗.
 
 1. **Endpoint ↔ data-model** *(core)* — every endpoint reads/writes ≥1 entity in `data-model.md`
-   (e.g. `POST /lessons/{id}/publish` mutates `lesson.status`). Absent sad.md, fall back to:
-   every endpoint maps to a §4 user story.
+   (e.g. `POST /lessons/{id}/publish` mutates `lesson.status`). On a legal fast-lane skip
+   (no `data-model.md`), fall back to: every endpoint reads/writes ≥1 entity in the **existing
+   schema** (the live `migrations/` DDL) — the same mirror as the sad.md fallback below. Absent
+   sad.md, fall back to: every endpoint maps to a §4 user story.
 2. **Error code ↔ repo error definition** *(core)* — every `code` in an `Error` response exists in
    the repo's error definitions, **checked in the form the repo uses**. Detect that form first —
    a constants/enum file, an error registry, a sentinel module, a generated table — and match
@@ -44,8 +51,10 @@ Each point is ✓ or ✗ with a one-line diagnostic on ✗.
    has no central error list yet, record "no error registry found — codes are the contract's
    proposal; reconcile when the repo defines them" rather than failing the point.
 3. **Validation ↔ constraint** *(core)* — `maxLength` / `pattern` / `enum` in the contract align
-   with the bounded types and uniqueness/format constraints in `data-model.md`. On a conflict,
-   take the **stricter** value and flag both — the human resolves which artifact is wrong.
+   with the bounded types and uniqueness/format constraints in `data-model.md` — or, on a legal
+   fast-lane skip, with the **existing schema's DDL** (column types, `CHECK`s, uniqueness in the
+   live migrations). On a conflict, take the **stricter** value and flag both — the human
+   resolves which artifact is wrong.
 4. **OpenAPI ↔ sequence** *(supporting)* — the methods, paths, and outcome branches the §6
    sequences imply match the contract. Mismatch usually means a sequence was drawn before the
    contract was finalized and never updated. Because §6 participants are generic
@@ -63,7 +72,9 @@ the report. Resolve each finding via the shared 4-state actions
 - **Save as Open Question** — park it with owner + due; the field/endpoint stays with a
   `# unresolved` note until answered.
 - **Fix the source first** — STOP; the contract waits for the user to correct `data-model.md` /
-  the sequence (this skill never edits sources).
+  the sequence (this skill never edits sources). On a legal fast-lane skip the "source" is the
+  existing schema — a mismatch there usually means the skip was NOT legal after all (the feature
+  needs a column that doesn't exist): route it to `data-model <slug>`, not to a schema hand-edit.
 
 ## Reconcile semantics (`--reconcile`)
 
@@ -89,6 +100,10 @@ after a thinner first pass. The reconcile pass:
 | `spec.md` §5 constraint contradicts a `data-model.md` constraint | Take the stricter value; flag both; the human resolves which artifact is wrong. |
 | Existing `openapi.yaml` has a field absent from every source | Keep it with a `# manual-addition` note; flag in the report. |
 | A field disappeared from `data-model.md` | Keep it in the YAML with a `# stale` note; surface it — the human removes from the contract or restores in the model. |
+
+On a **legal fast-lane skip** the `data-model.md` rows read against the **existing schema**
+instead; a field the contract needs that exists in *no* live migration is the loudest possible
+flag — it means a schema change exists and the skip was illegal → stop and run `data-model <slug>`.
 
 If ≥3 flags appear in one run, pause, list them, and ask whether to continue or fix the sources first.
 

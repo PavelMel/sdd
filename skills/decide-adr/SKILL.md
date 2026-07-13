@@ -23,6 +23,8 @@ The **post-hoc / asynchronous ADR path** (pipeline stage 8a). `design` spawns AD
 It is a recording utility, not a Socratic design stage — it does **not** run the shared Socratic loop or critic. The two shared dependencies are question phrasing and the worthiness gate:
 → [`../_shared/ask-style.md`](../_shared/ask-style.md) · [`../design/references/blast-radius.md`](../design/references/blast-radius.md)
 
+ADR prose (context / drivers / consequences) follows `artifact_language` — the MADR headings and `Status:` values (`Proposed` / `Accepted` / …) stay English → [`../_shared/artifact-language.md`](../_shared/artifact-language.md).
+
 ## Owner
 
 Decision author (usually the Architect or Tech Lead). A reviewer (Tech Lead, plus Security when relevant) signs off the `Proposed → Accepted` transition.
@@ -48,7 +50,8 @@ Decision author (usually the Architect or Tech Lead). A reviewer (Tech Lead, plu
 10. **Consequences.** Positive **and** Negative **and** Neutral — cons included, or it's rationalisation, not a record. Name what changes in the codebase, ops, monitoring, onboarding. `<!-- TBD -->` only where a number honestly needs a spike.
 11. **Status.** `Proposed` while a reviewer still has to sign off; `Accepted` once final. Run the review flow when needed: write `Proposed`, fill `reviewers`, and on sign-off flip to `Accepted` and bump `updated_at`. A reader six months on must be able to tell a live plan from a settled fact.
 12. **Close the loop.** Add a row to `sad.md` §9 ADR index (and link from `tasks/_epic.md` if the ADR scopes a specific task). The ADR's own `## Links` must point up to the spec + the relevant `sad.md` §N — no orphans.
-13. **Propose commit + handoff.** `adr: <slug> NNNN <title>`. Then **emit the stage-handoff block** per [`../_shared/handoff.md`](../_shared/handoff.md) (utility variant) — *What I did* + *Review* (`adr/NNNN-<title>.md`) + *Run next*: resume the gate that needed it (`/sdd:tasks <slug>` or `/sdd:plan-tests <slug>`); `/clear` optional.
+13. **Structural self-check** — per [`../_shared/self-check.md`](../_shared/self-check.md): re-read the written ADR from disk and verify **6 items**: (1) `NNNN` = prior `adr/*.md` count + 1 and is unique in the folder; (2) ≥2 options under Considered options; (3) Consequences carries at least one **Negative**; (4) `status` ∈ {Proposed, Accepted}; (5) a row for this ADR exists in `sad.md` §9 (when `sad.md` exists); (6) `## Links` is non-empty. Fix + re-check ≤2 cycles; surface anything unresolved.
+14. **Propose commit + handoff.** `adr: <slug> NNNN <title>`. Then **emit the stage-handoff block** per [`../_shared/handoff.md`](../_shared/handoff.md) (utility variant) — *What I did* (incl. «self-check: 6/6 pass») + *Review* (`adr/NNNN-<title>.md`) + *Run next*: resume the gate that needed it (`/sdd:tasks <slug>` or `/sdd:plan-tests <slug>`); `/clear` optional.
 
 ## Definition of Done
 

@@ -157,7 +157,7 @@ def main() -> int:
           "install.sh exists and is a bash script (#!/usr/bin/env bash)",
           "install.sh is missing or lacks the #!/usr/bin/env bash shebang")
 
-    VALID_MODELS = {"haiku", "sonnet", "opus", "inherit"}
+    VALID_MODELS = {"haiku", "sonnet", "opus", "fable", "inherit"}
     VALID_EFFORTS = {"low", "medium", "high", "xhigh", "max"}
     agent_names = {p.stem for p in (ROOT / "agents").glob("*.md")}
 
@@ -167,12 +167,16 @@ def main() -> int:
             v = v[1:-1]
         return [x.strip() for x in v.split(",") if x.strip()]
 
-    def check_profile(label: str, fm: dict, require: bool):
+    def check_profile(label: str, fm: dict, require: bool, require_agents: bool = False):
         """Validate model/effort/agents attributes if present (required on skills)."""
         m, e = fm.get("model"), fm.get("effort")
         if require:
             check(m is not None, f"{label} declares model", f"{label} is missing the model attribute")
             check(e is not None, f"{label} declares effort", f"{label} is missing the effort attribute")
+        if require_agents:
+            check(fm.get("agents") is not None,
+                  f"{label} declares agents",
+                  f"{label} is missing the agents attribute (use `agents: []` when it spawns none)")
         if m is not None:
             check(m in VALID_MODELS or "-" in m or "." in m,
                   f"{label} model {m!r} is valid", f"{label} model {m!r} not in {sorted(VALID_MODELS)} or a full id")
@@ -200,7 +204,7 @@ def main() -> int:
         check(len(fm.get("description", "")) >= 30 or "description" in _block_keys(skill_md),
               f"skill '{base}' has a description",
               f"skill '{base}' has no/short description")
-        check_profile(f"skill '{base}'", fm, require=True)
+        check_profile(f"skill '{base}'", fm, require=True, require_agents=True)
     check((skills_dir / "_shared").is_dir() and not (skills_dir / "_shared" / "SKILL.md").exists(),
           "_shared is reference-only (no SKILL.md)",
           "_shared is missing or contains a SKILL.md")
@@ -221,6 +225,20 @@ def main() -> int:
     skill_glob = sorted((ROOT / "skills").rglob("*.md"))
     skill_specs = sorted((ROOT / "skills").glob("*/SKILL.md"))
     doc_pool = skill_glob + sorted((ROOT / "agents").glob("*.md"))
+
+    # --- skill count in prose: README + the 4 manifests state the REAL skill count ---
+    # The "N atomic" phrase is marketing prose that silently rots when a skill is added;
+    # every file that carries it must agree with the actual number of skills/*/SKILL.md.
+    print("== skill count in prose ==")
+    n_skills = len(skill_specs)
+    ATOMIC_RE = re.compile(r"\b(\d+) atomic")
+    for rel in ("README.md", ".claude-plugin/plugin.json", ".claude-plugin/marketplace.json",
+                ".codex-plugin/plugin.json", ".cursor-plugin/plugin.json"):
+        counts = ATOMIC_RE.findall((ROOT / rel).read_text())
+        check(bool(counts) and all(int(c) == n_skills for c in counts),
+              f"{rel} states the real skill count ({n_skills} atomic)",
+              f"{rel} must say '{n_skills} atomic …' to match the {n_skills} skills/*/SKILL.md "
+              f"(found: {counts if counts else 'no `N atomic` phrase'})")
 
     # --- markdown relative links resolve (replaces the per-change manual link sweep) ---
     # Only *.md / dir targets are resolved (the doc cross-references). Skipped: http(s), #anchors,
@@ -282,6 +300,19 @@ def main() -> int:
               f"skill '{base}' emits the stage-handoff block (the literal phrase is present)",
               f"skill '{base}' SKILL.md never says 'stage-handoff block' — every stage must end with «emit the stage-handoff block per _shared/handoff.md»")
 
+    # --- every skill verifies its own output (the structural self-check contract) ---
+    # _shared/self-check.md defines the contract; every SKILL.md either runs a named checklist
+    # or maps its heavy verifier (critic/reviewer/drift/mermaid/GATE) onto it — the literal
+    # phrase «structural self-check» is the greppable evidence, same mechanism as the
+    # stage-handoff check above.
+    print("== structural self-check ==")
+    for skill_md in skill_specs:
+        base = skill_md.parent.name
+        check("structural self-check" in skill_md.read_text().lower(),
+              f"skill '{base}' names its structural self-check",
+              f"skill '{base}' SKILL.md never says 'structural self-check' — every skill must run "
+              f"the checklist (or map its heavy verifier) per _shared/self-check.md")
+
     # --- skill dir names are BRE-safe (install.sh interpolates them into a sed pattern) ---
     print("== skill dir names ==")
     DIRNAME_RE = re.compile(r"^[a-z0-9-]+$")
@@ -322,6 +353,66 @@ def main() -> int:
                + ", ".join(dups)) if dups
               else f"taxonomy row `{row} …` is missing from _shared/surfaces.md (did it move/rename?)")
 
+    # --- architecture-map template shape: the machine-readable keys survey fills ---
+    # implement's command-detection cascade reads test_cmd/lint_cmd from the map frontmatter and
+    # design/others key freshness off reflects_commit — the template must keep declaring them.
+    print("== architecture-map template ==")
+    amap = ROOT / "skills" / "survey" / "templates" / "architecture-map.md"
+    amap_fm = _block_keys(amap)
+    for key in ("test_cmd", "reflects_commit"):
+        check(key in amap_fm,
+              f"architecture-map template frontmatter declares `{key}`",
+              f"skills/survey/templates/architecture-map.md frontmatter lost the `{key}` key — "
+              f"command-detection / staleness checks read it")
+
+    # --- model policy consistency: judgment_model is documented in both policy files ---
+    # The judgment_model settings key (opus|fable switch for the judgment agents) is defined in
+    # the settings doc and consumed per agent-roster's precedence — if either file drops the
+    # mention, the policy silently forks.
+    print("== model policy ==")
+    for rel in ("skills/implement/references/settings.md", "skills/_shared/agent-roster.md"):
+        check("judgment_model" in (ROOT / rel).read_text(),
+              f"{rel} documents judgment_model",
+              f"{rel} never mentions 'judgment_model' — the settings doc and the roster policy must both carry it")
+
+    # --- artifact language: the key is defined + the rule is threaded through every writer ---
+    # The artifact_language settings key (en|uk prose switch for pipeline documents) is defined in
+    # the settings doc and its rule lives in _shared/artifact-language.md — if either drops the
+    # mention, the policy silently forks. And every artifact-writing skill must point at the shared
+    # rule; a dropped pointer means that skill's documents silently revert to always-English.
+    print("== artifact language ==")
+    for rel in ("skills/implement/references/settings.md", "skills/_shared/artifact-language.md"):
+        check("artifact_language" in (ROOT / rel).read_text(),
+              f"{rel} documents artifact_language",
+              f"{rel} never mentions 'artifact_language' — the settings doc and the shared rule must both carry it")
+    ARTIFACT_WRITERS = ("specify", "clarify", "glossary", "design", "decide-adr", "sequences",
+                        "data-model", "api", "tasks", "plan-tests", "review", "ship", "fix",
+                        "roadmap", "survey")
+    for name in ARTIFACT_WRITERS:
+        check("artifact-language.md" in (ROOT / "skills" / name / "SKILL.md").read_text(),
+              f"skills/{name}/SKILL.md points at _shared/artifact-language.md",
+              f"skills/{name}/SKILL.md never mentions 'artifact-language.md' — every artifact-writing "
+              f"skill must carry the language pointer")
+
+    # --- the route table is single-source in _shared/size-matrix.md + `.route` is threaded ---
+    # The Routes table (quick/standard/full handoff behaviour) lives ONLY in size-matrix.md;
+    # and the `.route` artifact must be named by the files that write/consume it — a rename or
+    # a dropped mention silently reverts the pipeline to always-standard.
+    print("== routes ==")
+    size_matrix_text = (ROOT / "skills" / "_shared" / "size-matrix.md").read_text()
+    ROUTE_HEADER = "| Route | Handoff behaviour at an optional stage |"
+    route_dups = [str(s.relative_to(ROOT)) for s in skill_specs if ROUTE_HEADER in s.read_text()]
+    check(ROUTE_HEADER in size_matrix_text and not route_dups,
+          "route table is single-source in _shared/size-matrix.md",
+          (f"route table header is duplicated in a SKILL.md (must live only in _shared/size-matrix.md): "
+           + ", ".join(route_dups)) if route_dups
+          else "route table header is missing from _shared/size-matrix.md (did it move/rename?)")
+    for rel in ("skills/_shared/size-matrix.md", "skills/_shared/handoff.md",
+                "skills/classify-size/SKILL.md", "skills/specify/SKILL.md"):
+        check('.route' in (ROOT / rel).read_text(),
+              f"{rel} mentions the .route artifact",
+              f"{rel} never mentions '.route' — it writes or resolves the route and must name the artifact")
+
     # --- no orphan in _shared/: every shared reference is pointed to by >=1 file ---
     print("== _shared no-orphan ==")
     for sf in sorted((ROOT / "skills" / "_shared").glob("*.md")):
@@ -361,9 +452,10 @@ def main() -> int:
                       ".mcp.json sdd-dashboard invokes the `start` package script",
                       ".mcp.json sdd-dashboard args must end in the `start` script (bun run … start)")
 
-    # server/ sources — the four modules + the Bun package manifest.
+    # server/ sources — the seven modules + the Bun package manifest.
     for rel in ("server/package.json", "server/server.ts", "server/state.ts",
-                "server/channel.ts", "server/paths.ts"):
+                "server/channel.ts", "server/paths.ts", "server/http.ts",
+                "server/frontmatter.ts", "server/watch.ts"):
         check((ROOT / rel).exists(), f"{rel} exists", f"{rel} is missing")
     # The server package must declare the MCP SDK dependency + a `start` script.
     spkg = ROOT / "server" / "package.json"
@@ -380,9 +472,10 @@ def main() -> int:
             check(False, "", f"server/package.json is not valid JSON: {exc}")
 
     # dashboard/ UI + vendored render libs (vendored, not CDN — offline reliability).
+    # mermaid stays vendored but is lazy-loaded by app.js (only when a ```mermaid
+    # block is actually rendered); redoc was dropped with the read-only dashboard.
     for rel in ("dashboard/index.html", "dashboard/app.js", "dashboard/style.css",
-                "dashboard/vendor/marked.min.js", "dashboard/vendor/mermaid.min.js",
-                "dashboard/vendor/redoc.standalone.js"):
+                "dashboard/vendor/marked.min.js", "dashboard/vendor/mermaid.min.js"):
         check((ROOT / rel).exists(), f"{rel} exists", f"{rel} is missing")
 
     # The `start` skill — the documented handshake (auto-discovered as a skill above, but

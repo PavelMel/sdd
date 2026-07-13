@@ -58,4 +58,6 @@ SDD-AC: AC-04
 
 One `SDD-AC` trailer per AC the task satisfied; the `SDD-Task` trailer ties the commit to `tasks.json`. Then mark the task `done` in `tracker.md`. (`per_phase` batches a phase's tasks into one commit; `off` leaves committing to the user but still updates the tracker.)
 
+**Compile-coupled lane exception.** Tasks in one compile-coupled lane (a shared-contract change + its implementer(s), marked by `tasks` via the shared contract file in `files_hint`) cannot each be committed green alone — the contract change breaks every implementer at compile time. They run **one shared GATE and one commit**: the commit carries an `SDD-Task` trailer **per task** and all of their `SDD-AC` trailers together, and the body names the coupling (e.g. «compile-coupled: T3 interface change + T4 implementation»). This is a sanctioned exception to task-scoped commits, not a license to batch unrelated tasks.
+
 In parallel modes the **lead serializes commits in dependency order** even though the work happened concurrently — the history stays linear and bisectable.

@@ -2,10 +2,11 @@
 name: start
 model: inherit
 effort: low
+agents: []
 description: >
-  Use to open the SDD visual dashboard — the local browser UI that shows every feature's
-  pipeline stage, renders its artifacts (markdown, mermaid C4/sequence/ER, OpenAPI/swagger),
-  lets you edit artifact text back to disk, and drives the pipeline by sending /sdd:<skill>
+  Use to open the SDD visual dashboard — the local read-only browser UI that shows every
+  feature's pipeline stage, renders its artifacts (markdown, mermaid C4/sequence/ER, OpenAPI
+  as plain YAML), and drives the pipeline by sending /sdd:<skill>
   commands back into this live session. Triggers on "start the dashboard", "open the SDD
   dashboard", "sdd dashboard", "/sdd:start", "show the pipeline UI", "відкрий дашборд",
   "запусти панель SDD". The sdd-dashboard MCP server auto-starts at session open (via .mcp.json),
@@ -91,6 +92,7 @@ The developer running the session. No artifact is produced — this is a connect
   (fallback only, when that file is absent) obtained from `dashboard_handshake` after a Bun check.
 - The queued/busy/`--depth=easy` behaviour stated so the user knows the dashboard is a driver, not a remote control.
 - The stage-handoff block emitted (utility variant).
+- This skill writes no artifact — the DoD gates above (opt-in confirmed, URL only from `current.url`/handshake) are its **structural self-check** ([`../_shared/self-check.md`](../_shared/self-check.md)).
 
 ## Anti-patterns
 

@@ -45,30 +45,56 @@ Artifact depth ∝ feature size. XS/S → minimal set; M+ → full.
 | test-plan — `plan-tests` | inline in spec | separate file |
 | implementation — `implement` | yes | yes |
 
-## The XS/S fast lane
+## Routes — quick / standard / full (the auto-router)
 
-For XS/S features the backbone collapses to a **fast lane**: the always-on stages plus only the
-optional stages whose work actually exists. The skip decision is made **at the handoff** — the
-producing stage's *Run next* offers the `↳ or` alternative and the **user** picks it; a skill never
-auto-skips a downstream stage. Every condition is a **«skip when N/A»** condition, never «skip
-always»: an XS feature *with* a schema change still runs `data-model`.
+The **route** decides how the optional stages (`clarify`, `sequences`, `data-model`, `api`,
+`plan-tests`) are handled at each handoff. It lives in **`docs/features/<slug>/.route`** — one
+line, plain text, exactly one of `quick` / `standard` / `full` (same discipline as `.size`: no
+comments, no frontmatter — wrappers grep it cheaply). It is written by `classify-size` (the
+canonical owner) and by `specify` step 1 when it classifies inline; the route **default derives
+from the size** — **XS/S → `quick`, M → `standard`, L/XL → `full`** — and is confirmed together
+with the size in the **same single `AskUserQuestion`** (the user may pick a different route than
+the default; a `quick` L is legal, just loud).
 
-| Stage | Skip when (the N/A condition) | Who offers the skip |
+| Route | Handoff behaviour at an optional stage |
+|---|---|
+| `quick` | the producing stage **evaluates the N/A condition itself** (table below): condition holds → **auto-skip** the stage, stating the reason in the handoff («auto-skipped `clarify`: zero §8 OQ»), and the `↳ or` alternative **inverts** — it now offers the *skipped* stage («run the full path»); condition does **not** hold → the stage is not skipped, normal forward handoff |
+| `standard` | today's behaviour — the handoff names the next stage and **offers** the skip as the `↳ or` alternative when the N/A condition holds; the **user** picks |
+| `full` | no skip alternatives — every optional stage runs; the handoff never prints an `↳ or` skip line |
+
+**Quick-route softenings** (in addition to the auto-skip): `design` recommends `--depth=easy` in
+the question that sets its depth dial; `plan-tests` always collapses to the inline `## Test plan`
+in `spec.md`; `clarify` auto-skips when the spec has zero §8 open questions.
+
+**Missing `.route`** → behave as `standard` (the pre-route default) and say so in the handoff —
+«route standard (default — no `.route`; run `/sdd:classify-size <slug>`)» — fully back-compatible.
+
+**Mid-flight override.** The route steers **handoffs only — it never makes a stage refuse**. To
+change course: re-run `/sdd:classify-size <slug>` (rewrites `.route`), or simply invoke a skipped
+stage directly — it runs normally regardless of the route.
+
+### The N/A conditions (the fast-lane table)
+
+Every condition is a **«skip when N/A»** condition, never «skip always»: an XS feature *with* a
+schema change still runs `data-model` — on every route.
+
+| Stage | Skip when (the N/A condition) | Who evaluates/offers it |
 |---|---|---|
 | `clarify` | the spec came out with **zero §8 open questions** and no AC was flagged ambiguous during specify | `specify`'s handoff |
 | `sequences` | **one actor and no multi-step runtime flow** — a single request/response or a pure rule change; nothing an `alt`-branch diagram would reveal | `design`'s handoff |
 | `data-model` | **no schema change** — no new entity, column, index, or migration | `sequences`' handoff |
-| `api` | **no contract change** — no new/changed endpoint, event, CLI command, or public signature (the skill also self-skips on «no external interface») | `data-model`'s handoff |
-| `plan-tests` | never fully skipped at XS/S — it **collapses to the inline `## Test plan`** in `spec.md` (cheap); skip entirely only when every task's DoD already names its test | `tasks`' handoff |
+| `api` | **no contract change** — no new/changed endpoint, event, CLI command, or public signature (the skill also self-skips on «no external interface»). `api` **accepts a legally-skipped `data-model`** (no schema change) — it derives from the existing schema; its hard gate fires only when a schema change exists | `data-model`'s handoff |
+| `plan-tests` | never fully skipped — it **collapses to the inline `## Test plan`** in `spec.md` (cheap; always inline on `quick`); skip entirely only when every task's DoD already names its test | `tasks`' handoff |
 
-**Never skippable:** `specify` (the spec is the trace anchor), `design` (declares `target_surfaces`
-+ the ADR gate), `tasks` (`implement` consumes `tasks.json`), `implement`, `review`, `ship`. The
-shortest legal route is therefore `specify → design → tasks → implement → review → ship` — an XS
-feature closes in one session.
+**Never skippable — on any route:** `specify` (the spec is the trace anchor), `design` (declares
+`target_surfaces` + the ADR gate), `tasks` (`implement` consumes `tasks.json`), `implement`,
+`review`, `ship`. The shortest legal route is therefore
+`specify → design → tasks → implement → review → ship` — a `quick` XS feature closes in one session.
 
 When several consecutive stages are N/A, walk the conditions in order at each handoff and jump to
 the first stage whose condition does **not** hold (skipping `sequences` moves its `data-model`
-skip-question into `design`'s handoff, and so on).
+skip-question into `design`'s handoff, and so on) — on `quick` the stage walks them itself, on
+`standard` it offers each hop as the `↳ or` alternative.
 
 ## Surface count is a second scaling axis
 

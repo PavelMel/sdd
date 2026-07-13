@@ -35,7 +35,7 @@ A short report, findings only (no preamble):
 - **[stage-N] <headline>** — file:line; AC: <id or n/a>; problem: <what>; suggested: <fix>.
 ```
 
-Cite a file:line and, where relevant, the AC or contract clause. If the change is clean, say so plainly: `REVIEW_CLEAN: <one-line scope>`. Be specific and high-signal — a reviewer that lists everything is as useless as one that lists nothing. Prioritise correctness and AC-compliance over style.
+Cite a file:line and, where relevant, the AC or contract clause. If the change is clean, say so plainly: `REVIEW_CLEAN: <one-line scope>`. Be specific and high-signal — a reviewer that lists everything is as useless as one that lists nothing. Prioritise correctness and AC-compliance over style. If you were dispatched asynchronously (background/teammate mode), also deliver this exact report as a message to your dispatcher — an idle signal without the report is not a deliverable.
 
 ## Rules
 

@@ -1,7 +1,7 @@
 ---
 name: plan-tests
 model: inherit
-effort: high
+effort: medium
 agents: []
 description: >
   Use to turn a feature's acceptance criteria into a test plan before any test is written — a
@@ -19,6 +19,8 @@ description: >
 Turns an already-specified feature into a **test plan**: a table that ties every acceptance criterion in `spec.md §5` to at least one named test, the levels those tests live at (unit / integration / e2e / contract / load), the integration strategy (a real dependency, spun up throwaway), and the test-data + cleanup approach. The plan is written *before* a single test exists — the next stage, `implement`, reads this map and writes the red tests against it, not "however it seems". This file is the spine; the output scaffold lives in `templates/test-plan.md`.
 
 This skill keeps only its own machinery. Question phrasing is **shared** → [`../_shared/ask-style.md`](../_shared/ask-style.md). Depth (inline in the spec vs a separate file) follows the **size matrix** → [`../_shared/size-matrix.md`](../_shared/size-matrix.md). It names test *levels*, never test *tools* — the concrete commands are detected by `implement` against the repo, not hard-coded here.
+
+Plan prose follows `artifact_language` — the `## Test plan` heading (parsed downstream), test names and level tokens stay English → [`../_shared/artifact-language.md`](../_shared/artifact-language.md).
 
 ## Owner
 
@@ -42,7 +44,9 @@ QA + the engineer who will implement the feature (co-authors). QA drives the lev
 6. **Integration strategy — real, ephemeral dependency.** For integration tests, the default is **an ephemeral real dependency, e.g. a throwaway DB container** spun up for the suite and torn down after (testcontainers-style). Mocking the datastore is an anti-pattern — a passing mock is not a passing production. State the seed strategy (factories/fixtures for the data shape) and the cleanup boundary (per-test vs per-suite); without cleanup the suite goes flaky and blocks CI.
 7. **NFR → load.** For each §6 NFR that carries a number, write one concrete load scenario (target rate, duration, the metric and its threshold) and name the tool generically: **the load tool already in your repo, or e.g. k6 or Locust**. If no NFR carries a number, mark the load section `<!-- N/A: no numeric NFR -->` — do not invent a load test.
 8. **CI placement.** Note which suites run where: fast suites (unit, contract) on every PR; the heavier ones (e2e, load) on a schedule or pre-release. The split is advice, not a pipeline config — `implement` and the repo's CI own the actual wiring.
-9. **Socratic walk + write + commit.** Walk the coverage table and the strategy choices with the 4-state actions from [`../_shared/ask-style.md`](../_shared/ask-style.md) (Accept / Fix / Save-as-OQ / Drop); on Fix, regenerate that one row (one round, second answer final). Maintain the edits-log per [`../_shared/socratic-loop.md`](../_shared/socratic-loop.md). On pass, write the plan to its target (separate file for M+, inline `## Test plan` for XS/S) and propose commit `test-plan: <slug>`. Then **emit the stage-handoff block** per [`../_shared/handoff.md`](../_shared/handoff.md) — *What I did* + *Review* (`test-plan.md`, or `spec.md` `## Test plan` for XS/S) + *Run next* (`/clear`, then `/sdd:implement <slug>`, which consumes this map to write the red tests).
+9. **Socratic walk + write.** Walk the coverage table and the strategy choices with the 4-state actions from [`../_shared/ask-style.md`](../_shared/ask-style.md) (Accept / Fix / Save-as-OQ / Drop); on Fix, regenerate that one row (one round, second answer final). Maintain the edits-log per [`../_shared/socratic-loop.md`](../_shared/socratic-loop.md). On pass, write the plan to its target (separate file for M+, inline `## Test plan` for XS/S).
+10. **Structural self-check** — per [`../_shared/self-check.md`](../_shared/self-check.md): re-read the written plan from disk and verify **6 items**: (1) every `spec.md` §5 AC id appears in the coverage table; (2) every error/authorization AC has its **own dedicated row** (not folded into a happy path); (3) every Level value ∈ the fixed vocabulary {unit, integration, e2e, contract, load, component, visual-regression, e2e-through-UI}; (4) **zero tool names** in the plan (no runner / broker / visual-diff / load-tool name outside the single "e.g. k6 / Locust" allowance); (5) the load section carries numbers (rate + duration + metric + threshold) or the literal `<!-- N/A: no numeric NFR -->`; (6) the plan sits at its size-correct target (inline `## Test plan` for XS/S or route `quick`, separate `test-plan.md` for M+). Fix + re-check ≤2 cycles; surface anything unresolved.
+11. **Propose commit + handoff.** `test-plan: <slug>`. Then **emit the stage-handoff block** per [`../_shared/handoff.md`](../_shared/handoff.md) — *What I did* (incl. «self-check: 6/6 pass») + *Review* (`test-plan.md`, or `spec.md` `## Test plan` for XS/S) + *Run next* (`/clear`, then `/sdd:implement <slug>`, which consumes this map to write the red tests).
 
 ## Definition of Done
 
@@ -66,6 +70,7 @@ QA + the engineer who will implement the feature (co-authors). QA drives the lev
 ## References & template
 
 - [`../_shared/ask-style.md`](../_shared/ask-style.md) — canonical question/option phrasing for steps 2 and 9.
+- [`../_shared/self-check.md`](../_shared/self-check.md) — the structural self-check contract step 10 runs.
 - [`../_shared/size-matrix.md`](../_shared/size-matrix.md) — inline-in-spec (XS/S) vs separate file (M+) depth.
 - [`../_shared/surfaces.md`](../_shared/surfaces.md) — a declared UI surface adds the component / visual-regression / e2e-through-UI tiers (testing-trophy vocabulary); read from `sad.md` `target_surfaces`.
 - [`./templates/test-plan.md`](./templates/test-plan.md) — output scaffold: AC→test mapping table, generic test levels, ephemeral-dependency integration strategy, stack-agnostic load section. Its `<!-- … -->` comments are the per-section contract.

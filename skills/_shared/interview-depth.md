@@ -1,7 +1,7 @@
 # Interview depth — easy / medium / hard (the depth dial)
 
-> **Reference-only.** Not a skill. The Q&A skills (`specify`, `clarify`, `design`) read this for
-> the canonical three levels and how each adapts. The dial tunes **how much the skill decides on
+> **Reference-only.** Not a skill. The Q&A skills (`specify`, `clarify`, `design`, `interview`) read
+> this for the canonical three levels and how each adapts. The dial tunes **how much the skill decides on
 > its own vs. interrogates you** — question volume, autonomy, which analyses run, and whether each
 > diagram is confirmed per-item or written-and-summarized. It does **not** tune *completeness*:
 > every acceptance criterion is still covered at every level (see the coverage floor below).
@@ -68,5 +68,6 @@ Depth tunes **how many questions** and **how much autonomy** — never **what ge
 - **`specify`** — the level gates step 3's ideation suite (table above) and the volume of the step-2 deep-dive + step-7 Socratic validation. The §5 coverage gates (≥1 of each of the 5 AC types **and ≥1 AC per §4 user story** — the use-case floor) are **floor, not dial** — enforced at every level.
 - **`clarify`** — the level gates how aggressively the self-sweep + `devils-advocate` hunt (easy: only build-divergence that changes behavior, with assumptions stated; hard: adversarial, every fork surfaced) and the per-finding question volume. Every surfaced ambiguity is still Resolved or Deferred at every level — none dangling.
 - **`design`** — the level gates the per-section Socratic question volume (easy: decide convention-defaults itself + ledger, ask only blast-radius decisions; hard: walk every decision, foreground each trade-off) and the C4 diagram confirmation (per [`diagram-presentation.md`](./diagram-presentation.md)). The blast-radius → ADR gate and the §11 owner+due rule are floors, enforced at every level.
+- **`interview`** (the pre-spec idea stress-test) — the level maps to a question budget + posture: **easy** → 3–4 questions (decide-for-you: one pass on intent, one sharp tradeoff, one angle); **medium** → 6–10 (balanced, full three phases); **hard** → 10–15 (interrogate-me: drill every assumption, run more probing frames). It writes no files, so there is no assumptions ledger — the budget and posture are the whole delta.
 
 A consuming skill adds a one-line pointer to this file at its depth-selection step and otherwise reads the level as a parameter into its existing loop — it does not re-implement the dial.

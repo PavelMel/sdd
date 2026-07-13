@@ -1,7 +1,7 @@
 ---
 name: sequences
 model: inherit
-effort: high
+effort: medium
 agents: []
 description: >
   Use to add Mermaid sequenceDiagram blocks to the SAD's runtime view (sad.md §6) — one per
@@ -17,6 +17,8 @@ description: >
 # Skill: sequences
 
 Draws the **runtime view** of an already-designed feature: for each critical flow it produces a Mermaid `sequenceDiagram` block — generic participants, happy path plus the error branches the spec demands — and writes them into `docs/features/<slug>/sad.md §6`. One flow at a time, user confirms each. The diagrams are the bridge between the static design (§5 building blocks) and the data layer: every persist/read step you draw becomes a hint for the indexes `data-model` will need.
+
+Diagram labels + §6 prose follow `artifact_language` — but the **existing `sad.md`'s language wins** over the setting; Mermaid keywords (`sequenceDiagram`, `participant`, `alt/else/end`) and participant names that name real modules stay English → [`../_shared/artifact-language.md`](../_shared/artifact-language.md).
 
 This skill keeps only its own machinery. Question phrasing is **shared** → [`../_shared/ask-style.md`](../_shared/ask-style.md). **Flow count is driven by the spec, not a cap** — every §4 user story / §5 acceptance criterion is covered (size may collapse *detail*, never *coverage*) → [`../_shared/size-matrix.md`](../_shared/size-matrix.md). Each diagram is **confirmed in prose, never as raw Mermaid** → [`../_shared/diagram-presentation.md`](../_shared/diagram-presentation.md); whether each flow is confirmed per-diagram or written-and-summarized follows the interview-depth setting → [`../_shared/interview-depth.md`](../_shared/interview-depth.md).
 
@@ -45,7 +47,7 @@ Tech Lead (drives the runtime decomposition). The PM confirms that each drawn fl
    - **Use-case pass (§4).** List **every §4 user story** and the flow(s) that realize it. Every retained user story maps to **≥1 flow** (a US with no flow is a gap — draft + confirm one, or de-scope it back through `specify`/`clarify`, never silently skip). `specify` already guarantees every §4 US carries ≥1 AC and `clarify` re-catches a US with none, so this pass is the runtime-view echo of that floor — both ends now checked, not just transitively assumed.
    - **AC pass (§5).** List **every §5 AC** and where it is now shown — a **dedicated flow**, an **`alt`/`else` branch**, or an **explicit non-runtime N/A** (with its one-line reason, e.g. «AC-7: middleware-enforced 401, not a runtime flow»).
    If a `Drop`/`Save-as-OQ` during step 6 left a user story or an AC uncovered, draft + confirm the missing flow or branch (the step 5–6 mini-loop) before proceeding, or record the explicit N/A with the user. **No §4 user story and no §5 AC may be silently uncovered.** (Completeness is independent of depth + size; this gate holds even at easy/XS.)
-8. **Finalize: order, validate, propose commit.** Order the §6 blocks to match §4. **Re-validate every `sequenceDiagram` block per [`../_shared/mermaid-check.md`](../_shared/mermaid-check.md)** as the backstop (balanced `alt`/`else`/`end`, declared participants; fix any that don't parse before committing). Append any flagged items (new participants, decisions worth an ADR) as a short note at the end of §6 — flag only, never auto-write an ADR. Propose commit `sequences: <slug> runtime flows`. Then **emit the stage-handoff block** per [`../_shared/handoff.md`](../_shared/handoff.md) — *What I did* + *Review* (`sad.md` §6) + *Run next* (`/clear`, then `/sdd:data-model <slug>`, which uses the persist notes to choose indexes; **for XS/S with no schema change** — no new entity/column/index in any drawn flow — **add the fast-lane alternative** `↳ or /sdd:api <slug>`, per the [size-matrix fast lane](../_shared/size-matrix.md)).
+8. **Finalize: order, validate, propose commit.** Order the §6 blocks to match §4. **Re-validate every `sequenceDiagram` block per [`../_shared/mermaid-check.md`](../_shared/mermaid-check.md)** as the backstop (balanced `alt`/`else`/`end`, declared participants; fix any that don't parse before committing). Append any flagged items (new participants, decisions worth an ADR) as a short note at the end of §6 — flag only, never auto-write an ADR. Propose commit `sequences: <slug> runtime flows`. Then **emit the stage-handoff block** per [`../_shared/handoff.md`](../_shared/handoff.md) — *What I did* + *Review* (`sad.md` §6) + *Run next* — **resolve the next stage per `.route`** (the Routes table in [`../_shared/size-matrix.md`](../_shared/size-matrix.md)): forward `/sdd:data-model <slug>` (which uses the persist notes to choose indexes); `data-model`'s N/A condition = **no schema change** (no new entity/column/index in any drawn flow), skip target `/sdd:api <slug>` (on `quick` — auto-skip with the reason + inverted `↳ or`; on `standard` — offer the `↳ or`; on `full` — no skip line).
 
 ## Definition of Done
 
@@ -56,6 +58,7 @@ Tech Lead (drives the runtime decomposition). The PM confirms that each drawn fl
 - Each flow shows the error branches its spec acceptance criteria require, not happy-path only; every mutating step carries a generic persist note for `data-model`.
 - Every async flow has an idempotency-key step, a retry note, and a dead-letter branch.
 - Pre-existing §6 blocks are untouched; new participants / ADR-worthy decisions are flagged, not silently added.
+- The step-7 use-case + AC coverage check + the step-8 mermaid re-validation are this skill's **structural self-check** ([`../_shared/self-check.md`](../_shared/self-check.md)); its result is reported in the handoff.
 
 ## Anti-patterns
 

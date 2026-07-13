@@ -3,6 +3,14 @@ status: current
 mode: current            # current (brownfield scan) | greenfield-bootstrap (target foundation)
 updated_at: "<YYYY-MM-DD>"
 reflects_commit: "<git short sha this map reflects>"
+# machine-readable keys — filled by survey from the explorer's findings; "" = unknown, NEVER guessed.
+# implement's command-detection cascade reads test_cmd/lint_cmd right after the settings override.
+language: ""             # primary language/runtime, e.g. "go 1.22"
+build_cmd: ""            # the command that builds the repo
+test_cmd: ""             # unit-test command the repo actually uses
+lint_cmd: ""             # lint command the repo actually uses
+migration_tool: ""       # e.g. "golang-migrate", "alembic", "prisma migrate"
+frontend: ""             # "" = no frontend; else the framework/kit, e.g. "react + tailwind"
 ---
 
 # Architecture map — <repo name>

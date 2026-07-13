@@ -14,7 +14,8 @@ The Socratic loop ([socratic-loop.md](./socratic-loop.md)) walks one section at 
 2. Read the consuming skill's critic delta (artifact name, upstream paths, F6 specialization).
 3. Fill the placeholders (`{{DRAFT}}`, `{{EDITS_LOG}}`, upstream paths) and pass the assembled text as the `Agent` prompt.
 4. The critic **Reads the upstream files itself** — the skill inlines only the draft + edits-log, never the upstream bodies.
-5. Resolve each finding with the user via `AskUserQuestion` (Accept revert / Accept amendment / Override-with-rationale). Override emits a documented bullet so downstream skills see the deliberate choice.
+5. **Async hosts:** when the host runs the agent asynchronously (background/teammate mode), append the report-delivery instruction from [`agent-roster.md`](./agent-roster.md) (shared-contract point 2) to the prompt. An idle/completion signal without content is **not** `NO_CONTESTED_DECISIONS` — pull the full report through the host's messaging channel before resolving anything.
+6. Resolve each finding with the user via `AskUserQuestion` (Accept revert / Accept amendment / Override-with-rationale). Override emits a documented bullet so downstream skills see the deliberate choice.
 
 ## Prompt skeleton (everything below the line is the agent prompt)
 

@@ -33,6 +33,7 @@ export const SKILL_NAMES = new Set([
 ])
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]*$/
+const DEPTHS = new Set(['easy', 'medium', 'hard'])
 
 export interface BuiltCommand {
   content: string
@@ -60,11 +61,64 @@ export function buildCommand(
     throw new Error(`invalid slug: ${slug}`)
   }
   const depth = opts.depth ?? 'easy'
+  // The type says easy|medium|hard, but the value arrives from a browser POST —
+  // validate at runtime too, or it splices into the command line.
+  if (!DEPTHS.has(depth)) throw new Error(`invalid depth: ${depth}`)
   // roadmap/survey are repo-wide — they still take the slug as a hint argument,
   // which the skills tolerate; keeping one shape simple beats special-casing.
   const content = `/sdd:${skill} ${s} --depth=${depth}`
   return { content, skill, slug: s }
 }
+
+// ---- pending questions (dashboard_ask → POST /api/answer) -------------------
+//
+// The dashboard cannot answer a blocking AskUserQuestion (that UI lives in the
+// terminal host). dashboard_ask is the browser-compatible alternative: Claude
+// posts a question WITH options and ends its turn; the user's click comes back
+// as a channel message. Anti-injection holds because the browser only ever
+// sends an option INDEX — the label text relayed to Claude is the text Claude
+// itself authored here.
+
+export interface AskOption {
+  label: string
+  description?: string
+}
+
+export interface PendingAsk {
+  id: string
+  slug: string | null
+  stage: string | null
+  question: string
+  options: AskOption[]
+}
+
+const MAX_PENDING_ASKS = 20
+
+export function createAskRegistry() {
+  const pending = new Map<string, PendingAsk>()
+  return {
+    register(ask: PendingAsk): void {
+      // Bounded: a run that leaks questions evicts its oldest, not our memory.
+      while (pending.size >= MAX_PENDING_ASKS) {
+        const oldest = pending.keys().next().value
+        if (oldest == null) break
+        pending.delete(oldest)
+      }
+      pending.set(ask.id, ask)
+    },
+    /** Single-use claim — a question can be answered exactly once. */
+    take(id: string): PendingAsk | null {
+      const ask = pending.get(id) ?? null
+      if (ask) pending.delete(id)
+      return ask
+    },
+    size(): number {
+      return pending.size
+    },
+  }
+}
+
+export type AskRegistry = ReturnType<typeof createAskRegistry>
 
 // ---- outbound tools (Claude → server → browser over WS) --------------------
 
@@ -74,6 +128,10 @@ export interface ChannelCtx {
   /** Broadcast a WS frame to every connected dashboard client. The server tags
    *  it with session_id + ts before sending. */
   broadcast: (frame: Frame) => void
+  /** Pending dashboard_ask questions, claimed by POST /api/answer. */
+  asks: AskRegistry
+  /** Random id for a new question (injected for determinism in tests). */
+  askId: () => string
 }
 
 interface ToolDef {
@@ -118,16 +176,30 @@ export const DASHBOARD_TOOLS: ToolDef[] = [
     },
   },
   {
-    name: 'dashboard_chat',
+    name: 'dashboard_ask',
     description:
-      'Send free-text back to the dashboard chat pane — answer a question the user typed there, or explain a decision. The dashboard is the chat surface; your transcript output does not reach the browser, only what you send through this tool.',
+      'Ask the dashboard user a blocking decision DURING a dashboard-driven run — the browser-compatible alternative to AskUserQuestion (which the dashboard cannot answer). Post the question with 2-4 concrete options, then END YOUR TURN: the user\'s pick arrives later as a channel message (meta.kind="answer") consumed while you are idle, exactly like a command — resume the run from the artifacts on disk. The user may instead answer in the terminal; accept whichever comes first.',
     inputSchema: {
       type: 'object',
       properties: {
-        text: { type: 'string' },
+        question: { type: 'string', description: 'the decision to make, one line' },
+        options: {
+          type: 'array',
+          minItems: 2,
+          maxItems: 4,
+          items: {
+            type: 'object',
+            properties: {
+              label: { type: 'string', description: 'short option text (1-5 words)' },
+              description: { type: 'string', description: 'optional trade-off note' },
+            },
+            required: ['label'],
+          },
+        },
         slug: { type: 'string' },
+        stage: { type: 'string' },
       },
-      required: ['text'],
+      required: ['question', 'options'],
     },
   },
   {
@@ -183,14 +255,47 @@ export function handleDashboardTool(
       })
       return { content: [{ type: 'text', text: 'logged' }] }
     }
-    case 'dashboard_chat': {
-      ctx.broadcast({
-        type: 'chat',
-        text: String(args.text ?? ''),
-        slug: str(args.slug) ?? null,
-        role: 'claude',
+    case 'dashboard_ask': {
+      const question = String(args.question ?? '').trim()
+      if (!question) throw new Error('question required')
+      const raw = Array.isArray(args.options) ? args.options : []
+      const options: AskOption[] = raw.map((o) => {
+        const opt = (o ?? {}) as Record<string, unknown>
+        const label = String(opt.label ?? '').trim()
+        if (!label) throw new Error('every option needs a non-empty label')
+        const description = str(opt.description)
+        return description ? { label, description } : { label }
       })
-      return { content: [{ type: 'text', text: 'sent' }] }
+      if (options.length < 2 || options.length > 4) {
+        throw new Error(`need 2-4 options, got ${options.length}`)
+      }
+      const id = ctx.askId()
+      ctx.asks.register({
+        id,
+        slug: str(args.slug) ?? null,
+        stage: str(args.stage) ?? null,
+        question,
+        options,
+      })
+      ctx.broadcast({
+        type: 'ask',
+        ask_id: id,
+        question,
+        options,
+        slug: str(args.slug) ?? null,
+        stage: str(args.stage) ?? null,
+      })
+      return {
+        content: [
+          {
+            type: 'text',
+            text:
+              `question ${id} posted to the dashboard. END YOUR TURN NOW — the user's pick arrives ` +
+              `as a channel message (meta.kind="answer", ask_id=${id}) once they click an option. ` +
+              `They may instead answer in the terminal; accept whichever comes first.`,
+          },
+        ],
+      }
     }
     case 'dashboard_done': {
       ctx.broadcast({

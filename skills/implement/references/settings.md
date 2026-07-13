@@ -2,7 +2,7 @@
 
 The engine is configured per-project by a plugin-settings file with YAML frontmatter. On first run, **lazy-create** it with the defaults below and tell the user where it is; on later runs, read it.
 
-> **Plugin-wide, not implement-only.** Most keys below configure the `implement` engine, but a few are read by **other skills too**. `interview_depth` is read by the Q&A skills (`specify` / `clarify` / `design`) to pre-select the depth dial. The file is **auto-created with documented defaults the first time any skill needs it** — normally `specify` at the start of the backbone — so the rest of the pipeline finds a real file instead of silently falling back. If for any reason it's still missing, a reader falls back to its own default (medium): there is **no hard ordering dependency** on `implement` having run first.
+> **Plugin-wide, not implement-only.** Most keys below configure the `implement` engine, but a few are read by **other skills too**. `interview_depth` is read by the Q&A skills (`specify` / `clarify` / `design`) to pre-select the depth dial. `artifact_language` is read by **every artifact-writing skill** — it sets the language pipeline documents are written in (prose only; structure stays English → [`../../_shared/artifact-language.md`](../../_shared/artifact-language.md)). The file is **auto-created with documented defaults the first time any skill needs it** — normally `specify` at the start of the backbone — so the rest of the pipeline finds a real file instead of silently falling back. If for any reason it's still missing, a reader falls back to its own default (medium): there is **no hard ordering dependency** on `implement` having run first.
 
 ## Auto-create when absent
 
@@ -19,6 +19,7 @@ Created **automatically** the first time a skill needs it — normally `specify`
 
 ```yaml
 interview_depth: medium    # easy | medium | hard — plugin-wide default for specify/clarify/design (see _shared/interview-depth.md)
+artifact_language: en      # en | uk (any language tag) — language pipeline DOCUMENTS are written in; headings + machine tokens stay English (see _shared/artifact-language.md)
 tdd: true                  # enforce red→green→refactor
 team_mode: false           # true → agent team via TeamCreate
 workflow_mode: auto        # auto → dynamic Workflow; off → never
@@ -38,9 +39,10 @@ cmd_vet: ""
 model_test_author: sonnet     # per-role model (see _shared/agent-roster.md); inherit = session model
 model_implementer: sonnet
 model_reviewer: opus
-effort_test_author: high      # per-role effort; raised to xhigh on escalation (once on Opus)
-effort_implementer: high
-effort_reviewer: xhigh
+judgment_model: opus       # opus | fable — one switch for ALL judgment agents (reviewer/critic/devils-advocate/strategist/analyst); per-role model_<role> wins for its role
+effort_test_author: medium    # per-role effort; raised to high on escalation
+effort_implementer: medium
+effort_reviewer: xhigh        # judgment agents on opus run xhigh by default (see _shared/agent-roster.md)
 dashboard_enabled: false   # true → opt into the SDD visual dashboard (the sdd-dashboard MCP server + browser UI); see skills/start
 dashboard_port: 4178       # integer — loopback port the dashboard binds (scans upward if busy); read by the server
 ```
@@ -48,6 +50,7 @@ dashboard_port: 4178       # integer — loopback port the dashboard binds (scan
 ## What each key does
 
 - **`interview_depth`** — `easy | medium | hard`. The plugin-wide default for the **Q&A skills'** depth dial (`specify` / `clarify` / `design`), which governs how much each skill decides on its own vs. interrogates you (question volume, autonomy, which ideation analyses run, per-diagram confirm vs. proceed). It only **pre-selects** the recommended option in each skill's opening depth question — the user can still override per run, or pass `--depth=` to skip the question. It does **not** affect AC-completeness (that's a floor at every level). Full semantics → [`../../_shared/interview-depth.md`](../../_shared/interview-depth.md). (Not read by the `implement` engine itself.)
+- **`artifact_language`** — `en | uk` (any language tag; default `en`). The language **pipeline documents** are written in — read by **every artifact-writing skill** (spec, SAD, ADRs, sequences, data-model, contracts, tasks, test plan, review/fix records, changelog, roadmap, CONTEXT.md), not by the `implement` engine. Only **prose** switches (paragraphs, table cells, diagram labels, the prose fields of `tasks.json` / `openapi.yaml`); **structure stays English** — section headings verbatim from the template, frontmatter keys+values, verdict literals, tracker states, Mermaid keywords, machine fields. Precedence when editing: an existing file's language wins over the setting, a new file matches its feature-folder neighbours, never retro-translate. Full rule + the never-translate token list → [`../../_shared/artifact-language.md`](../../_shared/artifact-language.md).
 - **`tdd`** — when false, RED is skipped and the engine writes code directly (warns; you lose the safety net).
 - **`team_mode` / `workflow_mode`** — feed the decision tree (see [`decision-tree.md`](./decision-tree.md)). `team_mode` wins when both could apply.
 - **`max_parallel_agents`** — fan-out cap for team/workflow modes. `1` forces sequential.
@@ -59,11 +62,12 @@ dashboard_port: 4178       # integer — loopback port the dashboard binds (scan
 - **`auto_commit`** — `per_task` (default), `per_phase`, or `off` (leave commits to the user).
 - **`branch_strategy`** — `feature`: ensure work is on a feature branch (create one if on the default branch); `current`: commit on the current branch.
 - **`cmd_*`** — explicit command overrides; non-empty values short-circuit detection (the escape hatch for unusual repos).
-- **`dashboard_enabled`** — `true | false` (default `false`). Opt into the **SDD visual dashboard**: the `sdd-dashboard` MCP server (auto-started from `.mcp.json`) binds a loopback HTTP+WS listener and serves the browser UI that shows every feature's pipeline stage, renders its artifacts, edits them back to disk, and drives the pipeline by sending `/sdd:<skill> <slug>` commands back into the live session. When `false` (or absent), the server stays idle — the markdown skills are unaffected. Run `/sdd:start` after enabling. Needs **Bun** installed. (Not read by the `implement` engine — read by the dashboard server + the `start` skill.)
+- **`dashboard_enabled`** — `true | false` (default `false`). Opt into the **SDD visual dashboard**: the `sdd-dashboard` MCP server (auto-started from `.mcp.json`) binds a loopback HTTP+WS listener and serves the read-only browser UI that shows every feature's pipeline stage, renders its artifacts, and drives the pipeline by sending `/sdd:<skill> <slug>` commands back into the live session. When `false` (or absent), the server stays idle — the markdown skills are unaffected. Run `/sdd:start` after enabling. Needs **Bun** installed. (Not read by the `implement` engine — read by the dashboard server + the `start` skill.)
 - **`dashboard_port`** — integer (default `4178`). The loopback port the dashboard binds; if busy the server scans upward (`4178..4189`) and `/sdd:start` prints the actual port. Only `127.0.0.1` is ever bound; mutating routes require the per-session capability token issued by `/sdd:start`.
 - **`model_*` / `effort_*`** — per-role model + effort for the three agents, applied when the engine spawns them (it overrides the agent's frontmatter default). Roster defaults + rationale → [`../../_shared/agent-roster.md`](../../_shared/agent-roster.md). Precedence: env var > this setting > agent frontmatter > session.
+- **`judgment_model`** — `opus | fable` (default `opus`). One switch for **all judgment agents** — `reviewer` / `critic` / `devils-advocate` / `strategist` / `analyst` — so the judgment tier can be raised to `fable` (the Mythos-tier model) in one place, without touching `agents/*.md`. A per-role `model_<role>` key still wins for its role. Full precedence (highest wins): `env > invocation > model_<role> > judgment_model > frontmatter > session`. Execution agents (`test-author` / `implementer`) and `explorer` / `researcher` are unaffected.
   - **Env path:** the engine also exports `CLAUDE_CODE_EFFORT_LEVEL` / `CLAUDE_CODE_SUBAGENT_MODEL` for the dispatch when these keys are set — the reliable lever (see [`agent-roster.md`](../../_shared/agent-roster.md) for why frontmatter alone may not suffice).
-  - **`.size` scaling:** execution effort is already `high` by default, so for **L/XL** features the engine re-dispatches execution on a stronger model (where `xhigh` unlocks on Opus) rather than nudging effort, and keeps the defaults for **XS/S** — a cross-module change is where reasoning depth pays off. It prints the resolved per-role model+effort in the banner.
+  - **`.size` scaling:** the engine raises the default effort for **L/XL** features (execution agents → `high`) before dispatch, and keeps the cheap defaults for **XS/S** — a cross-module change is where reasoning depth pays off. Judgment agents on `opus` already sit at `xhigh` and are not scaled further. It prints the resolved per-role model+effort in the banner.
 
 ## Reading semantics
 

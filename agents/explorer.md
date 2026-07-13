@@ -45,4 +45,4 @@ A tight structured summary:
 - **Conventions** — error handling, IDs, wiring/registration, test style, migration naming (with one example each, cited `file:line`).
 - **Fit notes** — where the new feature would slot in, and any friction you spotted (not a design — just the lay of the land).
 
-Cite `file:line` for every claim. If you couldn't determine something, say `UNKNOWN: <what>` rather than guessing.
+Cite `file:line` for every claim. If you couldn't determine something, say `UNKNOWN: <what>` rather than guessing. If you were dispatched asynchronously (background/teammate mode), also deliver this exact map as a message to your dispatcher — an idle signal without the map is not a deliverable.

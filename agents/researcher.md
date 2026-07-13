@@ -8,7 +8,7 @@ description: >
   Features · Value · Gap), each row footnoted with date + query. Stays product-level — never names a
   datastore/broker/framework, never invents a competitor to fill the table.
 model: sonnet
-effort: high
+effort: medium
 color: orange
 tools: Read, Grep, Glob, WebSearch, WebFetch
 ---

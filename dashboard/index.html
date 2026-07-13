@@ -7,8 +7,8 @@
   <title>SDD · dashboard</title>
   <link rel="stylesheet" href="/style.css" />
   <script src="/vendor/marked.min.js" defer></script>
-  <script src="/vendor/mermaid.min.js" defer></script>
-  <!-- Redoc is large; loaded lazily on first OpenAPI view (see app.js). -->
+  <!-- Mermaid is large (3.3 MB); loaded lazily on the first artifact that
+       actually contains a ```mermaid block (see app.js renderMermaidIn). -->
 </head>
 <body>
   <header class="topbar">
@@ -17,6 +17,13 @@
       <span class="sub" id="project">—</span>
     </div>
     <div class="topbar-right">
+      <label class="depth-label" title="Question depth for dashboard-driven runs: easy = skill self-decides reversible calls, hard = asks about everything">depth
+        <select id="depth">
+          <option value="easy" selected>easy</option>
+          <option value="medium">medium</option>
+          <option value="hard">hard</option>
+        </select>
+      </label>
       <button id="roadmap-btn" class="ghost" title="Repo roadmap">roadmap</button>
       <span class="conn" id="conn"><span class="dot" id="conn-dot"></span><span id="conn-text">connecting…</span></span>
       <span class="session" id="session"></span>
@@ -45,22 +52,20 @@
             <div class="badges" id="f-badges"></div>
           </div>
           <div class="feature-actions">
+            <button id="run-fix" class="run hidden" title="Run /sdd:fix — address the review's CHANGES REQUESTED">⚒ Fix</button>
             <button id="run-next" class="run primary" title="Run the next pending stage in the live session">▶ Run next stage</button>
           </div>
         </div>
 
         <div class="stepper" id="stepper"></div>
 
-        <div class="run-banner hidden" id="run-banner"></div>
+        <div class="run-status hidden" id="run-status"></div>
 
         <div class="artifact-area">
           <div class="artifact-tabs" id="artifact-tabs"></div>
           <div class="artifact-toolbar hidden" id="artifact-toolbar">
             <span class="artifact-path" id="artifact-path"></span>
             <span class="spacer"></span>
-            <button id="edit-btn" class="ghost small">edit</button>
-            <button id="save-btn" class="ghost small hidden">save</button>
-            <button id="cancel-btn" class="ghost small hidden">cancel</button>
           </div>
           <div class="artifact-viewer" id="artifact-viewer"></div>
         </div>
@@ -73,10 +78,6 @@
         <button id="clear-console" class="ghost small">clear</button>
       </div>
       <div class="console-log" id="console-log"></div>
-      <form class="chat-form" id="chat-form">
-        <input id="chat-input" type="text" placeholder="message the session…" autocomplete="off" />
-        <button type="submit" class="ghost small">send</button>
-      </form>
     </aside>
   </div>
 

@@ -1,7 +1,7 @@
 ---
 name: implement
 model: inherit
-effort: high
+effort: medium
 agents: [test-author, implementer, reviewer]
 description: >
   Use to implement a feature from its tasks.json with test-driven development — writes a failing
@@ -41,7 +41,7 @@ Tech Lead drives; the engine runs the cycle. The three subagents ship with the p
 6. **Generate the run-plan.** Sequential → an ordered task list. Team → a shared TaskList with the full task text in each body. Workflow → a generated `Workflow` script (DAG → Kahn phases → fan-out pipeline). → [`./references/team-exec.md`](./references/team-exec.md) / [`./references/workflow-exec.md`](./references/workflow-exec.md).
 7. **Banner.** Print the active mode and the settings that drove it: `mode=<…> tdd=<…> isolation=<…> parallel=<n> integration=<…>`. The user sees exactly how the engine will behave before it acts.
 8. **Execute** in the chosen mode. Every task runs the TDD cycle → [`./references/tdd-loop.md`](./references/tdd-loop.md). A `layer: migration` task first **promotes** its staged migration(s) (`docs/features/<slug>/migrations/<NN>_*`) into the live `migrations/` tree — assigning the real sequence number / timestamp per the repo's convention, in ordinal order — *then* applies + reverts them; detail → [`./references/inputs.md`](./references/inputs.md).
-9. **Per-task gate + commit.** After GREEN+REFACTOR: unit + (integration if available) + lint + vet must be clean, then commit task-scoped with trailers `SDD-Task: <id>` and `SDD-AC: <id>` (one per satisfied AC). Update `tracker.md` → `done`.
+9. **Per-task gate + commit.** After GREEN+REFACTOR: unit + (integration if available) + lint + vet must be clean, then commit task-scoped with trailers `SDD-Task: <id>` and `SDD-AC: <id>` (one per satisfied AC). Tasks in one **compile-coupled lane** (shared contract file in `files_hint`) pass one shared gate and one commit carrying every task's trailers — the sanctioned exception in [`./references/tdd-loop.md`](./references/tdd-loop.md) §COMMIT. Update `tracker.md` → `done`.
 10. **Summary + hand off.** Report covered AC, commits made (with `SDD-Task` trailers), any task dropped/blocked, and the per-task gate results. Then **emit the stage-handoff block** per [`../_shared/handoff.md`](../_shared/handoff.md) — *What I did* (covered AC, commits with `SDD-Task` trailers, gate results) + *Review* (the committed diff + `tasks/tracker.md`) + *Run next* (`/clear`, then `/sdd:review <slug>` — a clean-context pass over the whole diff), then `/sdd:ship <slug>`. In team mode the [`reviewer`](../../agents/reviewer.md) may also run per-task, but the authoritative independent review of the whole change lives in the `review` skill — `implement` does not self-certify.
 
 ## Decision tree (compact)
@@ -67,6 +67,7 @@ else:                                                        → SEQUENTIAL sing
 - Unit gate green; integration green where available (or NON-red recorded with the policy reason); lint + vet clean per the detected commands.
 - The active mode + settings were printed in the banner before execution.
 - `tracker.md` reflects final status; the summary reports the gate results and hands off to `review` (the independent review gate) — `implement` does not self-certify the whole change.
+- The per-task GATE (unit + integration + lint + vet) is this skill's **structural self-check** ([`../_shared/self-check.md`](../_shared/self-check.md)); its results are reported in the handoff.
 
 ## Anti-patterns
 

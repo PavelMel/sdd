@@ -34,5 +34,6 @@ leak rule). Run the canonical F1–F6 probes:
   `- **[F{n}] headline** — caused by: <ref>; contradicts: <draft §> + <upstream §>; suggested: <action>.`
 - If you cannot Read a required upstream file, output `CRITIC_BLOCKED: <reason>` and stop. Do not guess.
 - If the draft is coherent, output `NO_CONTESTED_DECISIONS`.
+- If you were dispatched asynchronously (background/teammate mode), also deliver this exact report as a message to your dispatcher — an idle signal without the report is not a verdict.
 
 Verify before you assert: re-read the cited lines before claiming a contradiction — a critic that invents drift is worse than none.
