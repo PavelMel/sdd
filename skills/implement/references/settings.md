@@ -39,10 +39,10 @@ cmd_vet: ""
 model_test_author: sonnet     # per-role model (see _shared/agent-roster.md); inherit = session model
 model_implementer: sonnet
 model_reviewer: opus
-judgment_model: opus       # opus | fable — one switch for ALL judgment agents (reviewer/critic/devils-advocate/strategist/analyst); per-role model_<role> wins for its role
-effort_test_author: medium    # per-role effort; raised to high on escalation
-effort_implementer: medium
-effort_reviewer: xhigh        # judgment agents on opus run xhigh by default (see _shared/agent-roster.md)
+judgment_model: fable      # opus | fable — one switch for ALL judgment agents (reviewer/critic/devils-advocate/strategist/analyst); per-role model_<role> wins for its role; set opus to cut judgment cost 2x
+effort_test_author: high      # per-role effort; raised to xhigh on escalation (Sonnet 5 supports xhigh — no model swap needed)
+effort_implementer: high
+effort_reviewer: xhigh        # judgment agents run xhigh at every size (see _shared/agent-roster.md)
 dashboard_enabled: false   # true → opt into the SDD visual dashboard (the sdd-dashboard MCP server + browser UI); see skills/start
 dashboard_port: 4178       # integer — loopback port the dashboard binds (scans upward if busy); read by the server
 ```
@@ -65,9 +65,9 @@ dashboard_port: 4178       # integer — loopback port the dashboard binds (scan
 - **`dashboard_enabled`** — `true | false` (default `false`). Opt into the **SDD visual dashboard**: the `sdd-dashboard` MCP server (auto-started from `.mcp.json`) binds a loopback HTTP+WS listener and serves the read-only browser UI that shows every feature's pipeline stage, renders its artifacts, and drives the pipeline by sending `/sdd:<skill> <slug>` commands back into the live session. When `false` (or absent), the server stays idle — the markdown skills are unaffected. Run `/sdd:start` after enabling. Needs **Bun** installed. (Not read by the `implement` engine — read by the dashboard server + the `start` skill.)
 - **`dashboard_port`** — integer (default `4178`). The loopback port the dashboard binds; if busy the server scans upward (`4178..4189`) and `/sdd:start` prints the actual port. Only `127.0.0.1` is ever bound; mutating routes require the per-session capability token issued by `/sdd:start`.
 - **`model_*` / `effort_*`** — per-role model + effort for the three agents, applied when the engine spawns them (it overrides the agent's frontmatter default). Roster defaults + rationale → [`../../_shared/agent-roster.md`](../../_shared/agent-roster.md). Precedence: env var > this setting > agent frontmatter > session.
-- **`judgment_model`** — `opus | fable` (default `opus`). One switch for **all judgment agents** — `reviewer` / `critic` / `devils-advocate` / `strategist` / `analyst` — so the judgment tier can be raised to `fable` (the Mythos-tier model) in one place, without touching `agents/*.md`. A per-role `model_<role>` key still wins for its role. Full precedence (highest wins): `env > invocation > model_<role> > judgment_model > frontmatter > session`. Execution agents (`test-author` / `implementer`) and `explorer` / `researcher` are unaffected.
+- **`judgment_model`** — `opus | fable` (default `fable` in this fork — the critical verdicts run on the strongest model; set `opus` to cut judgment cost 2x). One switch for **all judgment agents** — `reviewer` / `critic` / `devils-advocate` / `strategist` / `analyst` — so the judgment tier is raised in one place, without touching `agents/*.md`. A per-role `model_<role>` key still wins for its role. Full precedence (highest wins): `env > invocation > model_<role> > judgment_model > frontmatter > session`. Execution agents (`test-author` / `implementer`) and `explorer` / `researcher` are unaffected.
   - **Env path:** the engine also exports `CLAUDE_CODE_EFFORT_LEVEL` / `CLAUDE_CODE_SUBAGENT_MODEL` for the dispatch when these keys are set — the reliable lever (see [`agent-roster.md`](../../_shared/agent-roster.md) for why frontmatter alone may not suffice).
-  - **`.size` scaling:** the engine raises the default effort for **L/XL** features (execution agents → `high`) before dispatch, and keeps the cheap defaults for **XS/S** — a cross-module change is where reasoning depth pays off. Judgment agents on `opus` already sit at `xhigh` and are not scaled further. It prints the resolved per-role model+effort in the banner.
+  - **`.size` scaling:** the engine raises execution effort for **L/XL** features (`high` → `xhigh` — supported natively on Sonnet 5, no model swap needed) before dispatch, and keeps the defaults for **XS/S** — a cross-module change is where reasoning depth pays off. Judgment agents already sit at `xhigh` at every size and are not scaled further. It prints the resolved per-role model+effort in the banner.
 
 ## Reading semantics
 

@@ -1,6 +1,6 @@
 ---
 name: api
-model: inherit
+model: sonnet
 effort: medium
 agents: []
 description: >

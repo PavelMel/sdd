@@ -1,6 +1,6 @@
 ---
 name: sequences
-model: inherit
+model: sonnet
 effort: medium
 agents: []
 description: >

@@ -1,6 +1,6 @@
 ---
 name: data-model
-model: inherit
+model: sonnet
 effort: medium
 agents: [explorer]
 description: >

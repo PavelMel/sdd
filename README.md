@@ -316,7 +316,7 @@ how much reasoning effort, and which agents it spawns:
 ```yaml
 # a skill's frontmatter
 model: opus        # haiku | sonnet | opus | fable | inherit (fable — reachable via judgment_model / env, agents keep tier-alias defaults)
-effort: xhigh      # low | medium | high | xhigh | max — opus/judgment runs xhigh; inherit/execution runs medium
+effort: xhigh      # low | medium | high | xhigh | max — opus/judgment runs xhigh; sonnet/derivation runs medium; execution agents run high
 agents: [critic]   # the agents this skill spawns
 ```
 
@@ -325,9 +325,9 @@ Model is chosen by the **kind of work**, not by taste:
 | Kind of work | Model | Effort | Who |
 |---|---|---|---|
 | Judgment (spec, design, review, critique, ambiguity, strategy) | `opus` | `xhigh` | specify, clarify, design, review · `reviewer` / `critic` / `devils-advocate` / `strategist` / `analyst` |
-| Execution (write tests, write code) | `sonnet` | `medium` → `high` on escalation | `test-author`, `implementer` |
+| Execution (write tests, write code) | `sonnet` | `high` → `xhigh` on escalation | `test-author`, `implementer` |
 | Research / gathering (+ web) | `sonnet` | `medium` | `researcher` (competitive / adjacent-solution research) |
-| Search / scan · derivation | `haiku` · `inherit` | `low` · `medium` | `explorer` (scan) · data-model, api, sequences, tasks (derivation) |
+| Search / scan · derivation | `haiku` · `sonnet` | `low` · `medium` | `explorer` (scan) · data-model, api, sequences, tasks (derivation) |
 
 The nine agents (`agents/`): **explorer** (brownfield scan), **test-author** (failing tests),
 **implementer** (makes them pass), **reviewer** (independent review), **critic**
@@ -340,11 +340,14 @@ gated by the depth dial (easy skips them; hard runs the full suite).
 Two policy levers sit on top of the table. **`judgment_model`** (`.claude/sdd.local.md`;
 `opus | fable`) raises **all** judgment agents (`reviewer` / `critic` / `devils-advocate` /
 `strategist` / `analyst`) to the Mythos-tier model in one switch — `agents/*.md` keep their
-tier-alias defaults; a per-role `model_<role>` key still wins. And **this fork raises the judgment
-floor**: all five judgment agents run at **`effort: xhigh`** at *every* feature size — not just the
+tier-alias defaults; a per-role `model_<role>` key still wins — **this fork defaults it to `fable`**,
+so the critical verdicts run on the strongest model. And **this fork raises the judgment floor**:
+all five judgment agents run at **`effort: xhigh`** at *every* feature size — not just the
 `reviewer`/`critic` on L/XL, as upstream does — so the reasoning-heavy stages are always at the
-ceiling. Execution keeps the cheaper `medium` baseline and escalates to `high` on L/XL (via
-`CLAUDE_CODE_EFFORT_LEVEL`).
+ceiling. Execution runs a `high` baseline and escalates to `xhigh` on L/XL on the **same** Sonnet
+model (Sonnet 5 supports the full effort range — no model swap needed), while the derivation skills
+(`data-model` / `api` / `sequences` / `tasks` / …) are pinned to `sonnet` so mechanical work never
+rides an expensive session model.
 
 The full policy — override precedence (`env > invocation > model_<role> > judgment_model >
 frontmatter > session`), the `.size` scaling, and the env-var fallback for the `effort:` no-op
@@ -386,9 +389,9 @@ cmd_vet: ""
 model_test_author: sonnet  # per-role model + effort (see Models, effort & agents)
 model_implementer: sonnet
 model_reviewer: opus
-judgment_model: opus       # opus | fable — one switch for all judgment agents (reviewer/critic/devils-advocate/strategist/analyst)
-effort_test_author: medium # raised to high on escalation / for L-XL features
-effort_implementer: medium
+judgment_model: fable      # opus | fable — one switch for all judgment agents (reviewer/critic/devils-advocate/strategist/analyst); set opus to cut judgment cost 2x
+effort_test_author: high   # raised to xhigh on escalation / for L-XL features (same Sonnet model)
+effort_implementer: high
 effort_reviewer: xhigh     # judgment agents run xhigh at every size
 ```
 

@@ -11,8 +11,8 @@ Model is chosen by the **kind of work**, not by taste — judgment gets the stro
 | Agent | Kind of work | `model` | `effort` | Tools |
 |---|---|---|---|---|
 | `explorer` | brownfield scan / search (read-only) | `haiku` | `low` | Read, Grep, Glob, Bash |
-| `test-author` | write the failing test (execution) | `sonnet` | `medium` → `high` on escalation | + Write, Edit |
-| `implementer` | green + refactor + gate (execution) | `sonnet` | `medium` → `high` on escalation | + Write, Edit |
+| `test-author` | write the failing test (execution) | `sonnet` | `high` → `xhigh` on escalation | + Write, Edit |
+| `implementer` | green + refactor + gate (execution) | `sonnet` | `high` → `xhigh` on escalation | + Write, Edit |
 | `reviewer` | independent review (judgment) | `opus` | `xhigh` | Read, Grep, Glob, Bash |
 | `critic` | coherence critique (judgment) | `opus` | `xhigh` | Read, Grep, Glob |
 | `devils-advocate` | ambiguity hunt (judgment) | `opus` | `xhigh` | Read, Grep, Glob |
@@ -53,7 +53,7 @@ gathering (`explorer` / `researcher`) roles. See the settings doc:
 [`../implement/references/settings.md`](../implement/references/settings.md).
 
 - **`model`** env: `CLAUDE_CODE_SUBAGENT_MODEL`. Values: `haiku|sonnet|opus|inherit|<full-model-id>`.
-- **`effort`** env: `CLAUDE_CODE_EFFORT_LEVEL`. Values: `low|medium|high|xhigh|max|<number>` (`xhigh`/`max` only on Opus 4.8 / 4.7).
+- **`effort`** env: `CLAUDE_CODE_EFFORT_LEVEL`. Values: `low|medium|high|xhigh|max|<number>` (`xhigh`/`max` supported on Opus 4.7+, Sonnet 5, and Fable 5; not on Haiku 4.5).
 - The `CLAUDE_CODE_*` env vars are **Claude Code-only** levers — Codex CLI / Cursor ignore them; pick the model in the host's own settings there.
 - Per-project overrides live in `.claude/sdd.local.md` as `model_<role>` / `effort_<role>` keys (see the implement settings).
 
@@ -68,12 +68,13 @@ Default effort/model scale with the feature `.size` (see [`size-matrix.md`](./si
 
 - **XS/S** → keep the roster defaults (no extra escalation; the work is small).
 - **M** → roster defaults; escalation handles the hard tasks.
-- **L/XL** → bump execution effort (`test-author` / `implementer`) from `medium` to `high` via
-  `CLAUDE_CODE_EFFORT_LEVEL` (the reliable lever — see the caveat above) — a cross-module change is
-  where reasoning depth pays off. **The judgment agents need no size scaling here:** this fork runs
-  all five (`reviewer` / `critic` / `devils-advocate` / `strategist` / `analyst`) at `effort: xhigh`
-  at *every* size, so the critical verifications are already at the ceiling upstream only reaches on
-  L/XL.
+- **L/XL** → bump execution effort (`test-author` / `implementer`) from `high` to `xhigh` via
+  `CLAUDE_CODE_EFFORT_LEVEL` (the reliable lever — see the caveat above) — Sonnet 5 supports the
+  full effort range, so escalation stays on the same model instead of re-dispatching on a stronger
+  one; a cross-module change is where reasoning depth pays off. **The judgment agents need no size
+  scaling here:** this fork runs all five (`reviewer` / `critic` / `devils-advocate` / `strategist`
+  / `analyst`) at `effort: xhigh` at *every* size, so the critical verifications are already at the
+  ceiling.
 
 A skill/engine that knows the size applies this before dispatch and says so in its banner.
 

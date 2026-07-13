@@ -1,6 +1,6 @@
 ---
 name: ship
-model: inherit
+model: sonnet
 effort: medium
 agents: []
 description: >

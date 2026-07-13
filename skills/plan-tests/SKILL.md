@@ -1,6 +1,6 @@
 ---
 name: plan-tests
-model: inherit
+model: sonnet
 effort: medium
 agents: []
 description: >
